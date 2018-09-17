@@ -233,6 +233,18 @@ void grid_print (grid_t* gridPtr){
     // TODO implementar esta funcao
     // Sugestão: usem as opções de formatação do output do printf para impor espaço fixo
     // entre os elementos da grelha. Por exemplo: printf("%4li", valor-a-imprimir);
+    long * points = gridPtr->points;
+    long width = gridPtr->width, height = gridPtr->height, depth = gridPtr->depth;
+
+    for (long z = 0; z < depth; z++) {
+        printf("[z = %ld]\n", z);
+        for (long i = 0; i < height; i++ ) {
+            for (long j = 0; j < width; j++) {
+                printf(" %4ld", points[j + i*width + z*height*width]);
+            }
+            printf("\n");
+        }
+    }
 }
 
 
