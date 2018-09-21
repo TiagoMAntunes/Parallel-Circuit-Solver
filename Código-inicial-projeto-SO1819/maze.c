@@ -140,7 +140,6 @@ static void addToGrid (grid_t* gridPtr, vector_t* vectorPtr, char* type){
 
 /* =============================================================================
  * maze_read
- * -- Return number of path to route
  * =============================================================================
  */
 
