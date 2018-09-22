@@ -1,4 +1,4 @@
-CFLAGS= -g -Wall -pedantic
+CFLAGS=-g -Wall -pedantic
 
 CircuitRouter-SeqSolver: coordinate.o grid.o CircuitRouter-SeqSolver.o maze.o router.o lib/list.o lib/pair.o lib/queue.o lib/vector.o
 	gcc $(CFLAGS) coordinate.o grid.o CircuitRouter-SeqSolver.o maze.o router.o lib/list.o lib/pair.o lib/queue.o lib/vector.o -lm -o CircuitRouter-SeqSolver
