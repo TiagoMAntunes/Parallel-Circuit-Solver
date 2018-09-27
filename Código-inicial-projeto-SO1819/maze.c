@@ -353,8 +353,14 @@ bool_t maze_checkPaths (maze_t* mazePtr, list_t* pathVectorListPtr, bool_t doPri
     } /* iterate over pathVectorList */
 
     if (doPrintPaths) {
-        puts("\nRouted Maze:");
-        grid_print(testGridPtr);
+        FILE *f = fopen("out.txt", "w");
+        if (f == NULL) {
+            perror("out.txt");
+            exit(1);
+        }
+
+        fprintf(f, "Routed Maze:\n");
+        grid_print_to_file(testGridPtr, f);
     }
 
     grid_free(testGridPtr);

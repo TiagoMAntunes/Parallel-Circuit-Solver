@@ -247,7 +247,27 @@ void grid_print (grid_t* gridPtr){
     }
 }
 
+/* =============================================================================
+ * grid_print_to_file
+ * =============================================================================
+ */
+void grid_print_to_file(grid_t* gridPtr, FILE *f) {
+    long * points = gridPtr->points;
+    long width = gridPtr->width, height = gridPtr->height, depth = gridPtr->depth;
 
+    for (long z = 0; z < depth; z++) {
+        fprintf(f, "[z = %ld]\n", z);
+        for (long i = 0; i < height; i++ ) {
+            for (long j = 0; j < width; j++) {
+                fprintf(f, " %4ld", points[j + i*width + z*height*width]);
+            }
+            fprintf(f, "\n");
+        }
+    }
+    int flag = fclose(f);
+    if (flag != 0)
+        abort();
+}
 /* =============================================================================
  *
  * End of grid.c
