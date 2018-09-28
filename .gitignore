@@ -1,3 +1,4 @@
 playground/
 **/*.o
-toUse.txt 
+toUse.txt
+**/*.res.old 
