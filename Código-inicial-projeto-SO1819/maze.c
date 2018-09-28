@@ -54,6 +54,8 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
+#include <unistd.h>     //NOTA added unistd and string
 #include "coordinate.h"
 #include "grid.h"
 #include "lib/list.h"
@@ -268,12 +270,53 @@ long maze_read (maze_t* mazePtr, char *input_file){      //NOTA add file name ar
     return vector_getSize(srcVectorPtr);
 }
 
+//===========================================================================================
+
+
+char* create_output_file(char *input_file) {
+    int len_file_name = strlen(input_file);
+    char* file_name = (char*) malloc(sizeof(char) * len_file_name + strlen(".res.old") + 1);
+    char* res_file; 
+
+    file_name = strcpy(file_name, input_file);
+    file_name = strcat(file_name, ".res");
+    res_file = strdup(file_name);
+
+    if (access(file_name, F_OK) != -1) {               //existe .res
+        file_name = strcat(file_name, ".old");
+
+        if (access(file_name, F_OK) != -1)                //existe .old
+            if(remove(file_name) == -1)
+                abort();
+
+        int flag = rename(res_file, file_name);
+        if (flag == -1)      
+            abort();
+            
+        return res_file;
+        
+    }
+    else {
+
+        FILE *fp = fopen(res_file, "w");
+        if (fp == NULL) {
+            perror(res_file);
+            abort();
+        }
+        fclose(fp);
+
+        return res_file;
+    }
+}
+
+//==========================================================================================
+
 /* =============================================================================
  * maze_checkPaths
  * =============================================================================
  */
-bool_t maze_checkPaths (maze_t* mazePtr, list_t* pathVectorListPtr, bool_t doPrintPaths){
-    grid_t* gridPtr = mazePtr->gridPtr;                 //NOTA se !true, mudar o header
+bool_t maze_checkPaths (maze_t* mazePtr, list_t* pathVectorListPtr, char *input_file){
+    grid_t* gridPtr = mazePtr->gridPtr;                
     long width  = gridPtr->width;
     long height = gridPtr->height;
     long depth  = gridPtr->depth;
@@ -361,16 +404,14 @@ bool_t maze_checkPaths (maze_t* mazePtr, list_t* pathVectorListPtr, bool_t doPri
         } /* iteratate over pathVector */
     } /* iterate over pathVectorList */
 
-    if (doPrintPaths) {                     //NOTA tirar if 
-        FILE *f = fopen("out.txt", "w");
-        if (f == NULL) {
-            perror("out.txt");
-            exit(1);
-        }
-
-        fprintf(f, "Routed Maze:\n");
-        grid_print_to_file(testGridPtr, f);
-    }
+    char *file_name = create_output_file(input_file);
+            
+    FILE *f = fopen(file_name, "w");
+    if (f == NULL) 
+        exit(1);
+    
+    fprintf(f, "Routed Maze:\n");
+    grid_print_to_file(testGridPtr, f);
 
     grid_free(testGridPtr);
 

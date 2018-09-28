@@ -75,7 +75,7 @@ enum param_defaults {
     PARAM_DEFAULT_ZCOST    = 2,
 };
 
-bool_t global_doPrint = FALSE;      // NOTA mudar para true ou mudar headres em maze.c e.h
+
 char* global_inputFile = NULL;
 long global_params[256]; /* 256 = ascii limit */
 
@@ -88,7 +88,6 @@ static void displayUsage (const char* appName){
     printf("Usage: %s [options]\n", appName);
     puts("\nOptions:                            (defaults)\n");
     printf("    b <INT>    [b]end cost          (%i)\n", PARAM_DEFAULT_BENDCOST);
-    printf("    p          [p]rint routed maze  (false)\n");        // NOTA tirar p
     printf("    x <UINT>   [x] movement cost    (%i)\n", PARAM_DEFAULT_XCOST);
     printf("    y <UINT>   [y] movement cost    (%i)\n", PARAM_DEFAULT_YCOST);
     printf("    z <UINT>   [z] movement cost    (%i)\n", PARAM_DEFAULT_ZCOST);
@@ -128,9 +127,6 @@ static void parseArgs (long argc, char* const argv[]){
             case 'y':
             case 'z':
                 global_params[(unsigned char)opt] = atol(optarg);
-                break;
-            case 'p':                       // NOTA tirar p
-                global_doPrint = TRUE;
                 break;
             case '?':
             case 'h':
@@ -198,8 +194,8 @@ int main(int argc, char** argv){
      * Check solution and clean up
      */
     assert(numPathRouted <= numPathToRoute);
-    bool_t status = maze_checkPaths(mazePtr, pathVectorListPtr, global_doPrint);
-    assert(status == TRUE);
+    bool_t status = maze_checkPaths(mazePtr, pathVectorListPtr, input_file);
+    assert(status == TRUE);                     
     puts("Verification passed.");
 
     maze_free(mazePtr);
