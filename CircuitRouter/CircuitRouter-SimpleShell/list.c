@@ -24,19 +24,20 @@ void removeByPID(int pid, Node head) {
         if (h->next != NULL && getPid(h->next->item) == pid) {
             Node aux = h->next;
             h->next = h->next->next;
-            free(h);
+            free(aux);
+            return;
         }
 }
 
-Node getByPID(int pid, Node head) {
+Process *getByPID(int pid, Node head) {
     for (Node h = head->next; h != NULL; h = h->next)
         if (getPid(h->item) == pid) 
-            return h;
+            return h->item;
 }
 
 void freeAll(Node head) {
     Node aux;
-    for (Node h = head; h != NULL; aux = h) {
+    for (Node h = head, aux = h; h != NULL; aux = h) {
         h = h->next;
         freeNode(aux);
     }

@@ -13,7 +13,7 @@ void insert(Node head, Node new);
 
 void removeByPID(int pid, Node head);
 
-Node getByPID(int pid, Node head);
+Process * getByPID(int pid, Node head);
 
 void freeAll(Node head);
 
