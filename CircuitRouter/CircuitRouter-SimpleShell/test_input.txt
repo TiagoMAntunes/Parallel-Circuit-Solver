@@ -1,0 +1,8 @@
+run ../CircuitRouter-SeqSolver/inputs/random-x32-y32-z3-n64.txt
+run ../CircuitRouter-SeqSolver/inputs/random-x32-y32-z3-n64.txt
+run ../CircuitRouter-SeqSolver/inputs/random-x32-y32-z3-n64.txt
+run ../CircuitRouter-SeqSolver/inputs/random-x32-y32-z3-n64.txt
+run ../CircuitRouter-SeqSolver/inputs/random-x32-y32-z3-n64.txt
+run ../CircuitRouter-SeqSolver/inputs/random-x32-y32-z3-n64.txt
+run ../CircuitRouter-SeqSolver/inputs/random-x32-y32-z3-n64.txt
+exit
