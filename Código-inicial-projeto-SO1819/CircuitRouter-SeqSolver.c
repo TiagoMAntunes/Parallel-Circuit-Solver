@@ -75,7 +75,7 @@ enum param_defaults {
     PARAM_DEFAULT_ZCOST    = 2,
 };
 
-bool_t global_doPrint = FALSE;
+bool_t global_doPrint = FALSE;      // NOTA mudar para true ou mudar headres em maze.c e.h
 char* global_inputFile = NULL;
 long global_params[256]; /* 256 = ascii limit */
 
@@ -88,7 +88,7 @@ static void displayUsage (const char* appName){
     printf("Usage: %s [options]\n", appName);
     puts("\nOptions:                            (defaults)\n");
     printf("    b <INT>    [b]end cost          (%i)\n", PARAM_DEFAULT_BENDCOST);
-    printf("    p          [p]rint routed maze  (false)\n");
+    printf("    p          [p]rint routed maze  (false)\n");        // NOTA tirar p
     printf("    x <UINT>   [x] movement cost    (%i)\n", PARAM_DEFAULT_XCOST);
     printf("    y <UINT>   [y] movement cost    (%i)\n", PARAM_DEFAULT_YCOST);
     printf("    z <UINT>   [z] movement cost    (%i)\n", PARAM_DEFAULT_ZCOST);
@@ -129,7 +129,7 @@ static void parseArgs (long argc, char* const argv[]){
             case 'z':
                 global_params[(unsigned char)opt] = atol(optarg);
                 break;
-            case 'p':
+            case 'p':                       // NOTA tirar p
                 global_doPrint = TRUE;
                 break;
             case '?':
@@ -140,7 +140,7 @@ static void parseArgs (long argc, char* const argv[]){
         }
     }
 
-    for (i = optind; i < argc; i++) {
+    for (i = optind; i < argc-1; i++) {     // NOTA argc-1 porque o argumento com o nome do ficheiro de input é obrigatorio
         fprintf(stderr, "Non-option argument: %s\n", argv[i]);
         opterr++;
     }
@@ -163,7 +163,9 @@ int main(int argc, char** argv){
     maze_t* mazePtr = maze_alloc();
     assert(mazePtr);
 
-    long numPathToRoute = maze_read(mazePtr);
+    char *input_file = argv[argc - 1];          //NOTA get input_file name
+
+    long numPathToRoute = maze_read(mazePtr, input_file);       //NOTA added input_file name
     router_t* routerPtr = router_alloc(global_params[PARAM_XCOST],
                                        global_params[PARAM_YCOST],
                                        global_params[PARAM_ZCOST],

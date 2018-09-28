@@ -143,7 +143,7 @@ static void addToGrid (grid_t* gridPtr, vector_t* vectorPtr, char* type){
  * =============================================================================
  */
 
-long maze_read (maze_t* mazePtr){
+long maze_read (maze_t* mazePtr, char *input_file){      //NOTA add file name argument
     
     /*
      * Parse input from stdin
@@ -157,8 +157,15 @@ long maze_read (maze_t* mazePtr){
     vector_t* wallVectorPtr = mazePtr->wallVectorPtr;
     vector_t* srcVectorPtr = mazePtr->srcVectorPtr;
     vector_t* dstVectorPtr = mazePtr->dstVectorPtr;
+
+    FILE *fp = fopen(input_file, "r");      //NOTA  abre o ficheiro com o input
+    if (fp == NULL) {
+        perror(input_file);
+        exit(1);
+    }
+
     
-    while (fgets(line, sizeof(line), stdin)) {
+    while (fgets(line, sizeof(line), fp)) { //NOTA passa a ler do ficheiro
         
         char code;
         long x1, y1, z1;
@@ -255,6 +262,8 @@ long maze_read (maze_t* mazePtr){
         queue_push(workQueuePtr, (void*)coordinatePairPtr);
     }
     list_free(workListPtr);
+
+    fclose(fp);             //NOTA close file
     
     return vector_getSize(srcVectorPtr);
 }
@@ -264,7 +273,7 @@ long maze_read (maze_t* mazePtr){
  * =============================================================================
  */
 bool_t maze_checkPaths (maze_t* mazePtr, list_t* pathVectorListPtr, bool_t doPrintPaths){
-    grid_t* gridPtr = mazePtr->gridPtr;
+    grid_t* gridPtr = mazePtr->gridPtr;                 //NOTA se !true, mudar o header
     long width  = gridPtr->width;
     long height = gridPtr->height;
     long depth  = gridPtr->depth;
@@ -352,7 +361,7 @@ bool_t maze_checkPaths (maze_t* mazePtr, list_t* pathVectorListPtr, bool_t doPri
         } /* iteratate over pathVector */
     } /* iterate over pathVectorList */
 
-    if (doPrintPaths) {
+    if (doPrintPaths) {                     //NOTA tirar if 
         FILE *f = fopen("out.txt", "w");
         if (f == NULL) {
             perror("out.txt");
