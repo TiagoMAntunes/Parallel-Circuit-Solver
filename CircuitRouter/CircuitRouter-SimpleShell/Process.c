@@ -1,4 +1,5 @@
 #include "Process.h"
+#include <time.h>
 #include <stdlib.h>
 
 Process * createProcess(int pid) {
@@ -22,6 +23,6 @@ int status(Process * p) {
     return p->status;
 }
 
-int pid(Process * p) {
+int getPid(Process * p) {
     return p->pid;
 }
