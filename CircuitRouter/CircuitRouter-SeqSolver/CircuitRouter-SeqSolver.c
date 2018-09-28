@@ -75,7 +75,6 @@ enum param_defaults {
     PARAM_DEFAULT_ZCOST    = 2,
 };
 
-
 char* global_inputFile = NULL;
 long global_params[256]; /* 256 = ascii limit */
 
@@ -88,7 +87,7 @@ static void displayUsage (const char* appName){
     printf("Usage: %s [options]\n", appName);
     puts("\nOptions:                            (defaults)\n");
     printf("    b <INT>    [b]end cost          (%i)\n", PARAM_DEFAULT_BENDCOST);
-    printf("    x <UINT>   [x] movement cost    (%i)\n", PARAM_DEFAULT_XCOST);
+    printf("    p          [p]rint routed maze  (false)\n");
     printf("    y <UINT>   [y] movement cost    (%i)\n", PARAM_DEFAULT_YCOST);
     printf("    z <UINT>   [z] movement cost    (%i)\n", PARAM_DEFAULT_ZCOST);
     printf("    h          [h]elp message       (false)\n");
@@ -120,7 +119,7 @@ static void parseArgs (long argc, char* const argv[]){
 
     setDefaultParams();
 
-    while ((opt = getopt(argc, argv, "b:px:y:z:")) != -1) {
+    while ((opt = getopt(argc, argv, "hb:px:y:z:")) != -1) {
         switch (opt) {
             case 'b':
             case 'x':
@@ -136,7 +135,7 @@ static void parseArgs (long argc, char* const argv[]){
         }
     }
 
-    for (i = optind; i < argc-1; i++) {     // NOTA argc-1 porque o argumento com o nome do ficheiro de input é obrigatorio
+    for (i = optind; i < argc - 1; i++) {
         fprintf(stderr, "Non-option argument: %s\n", argv[i]);
         opterr++;
     }
@@ -158,10 +157,10 @@ int main(int argc, char** argv){
     parseArgs(argc, (char** const)argv);
     maze_t* mazePtr = maze_alloc();
     assert(mazePtr);
-
-    char *input_file = argv[argc - 1];          //NOTA get input_file name
-
-    long numPathToRoute = maze_read(mazePtr, input_file);       //NOTA added input_file name
+    
+    char *input_file = argv[argc - 1];
+    long numPathToRoute = maze_read(mazePtr, input_file);
+    
     router_t* routerPtr = router_alloc(global_params[PARAM_XCOST],
                                        global_params[PARAM_YCOST],
                                        global_params[PARAM_ZCOST],
@@ -195,7 +194,7 @@ int main(int argc, char** argv){
      */
     assert(numPathRouted <= numPathToRoute);
     bool_t status = maze_checkPaths(mazePtr, pathVectorListPtr, input_file);
-    assert(status == TRUE);                     
+    assert(status == TRUE);
     puts("Verification passed.");
 
     maze_free(mazePtr);

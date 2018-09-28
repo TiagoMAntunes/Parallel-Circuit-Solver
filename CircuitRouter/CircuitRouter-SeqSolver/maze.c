@@ -55,7 +55,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <unistd.h>     //NOTA added unistd and string
+#include <unistd.h>
 #include "coordinate.h"
 #include "grid.h"
 #include "lib/list.h"
@@ -133,19 +133,26 @@ static void addToGrid (grid_t* gridPtr, vector_t* vectorPtr, char* type){
     long n = vector_getSize(vectorPtr);
     for (i = 0; i < n; i++) {
         coordinate_t* coordinatePtr = (coordinate_t*)vector_at(vectorPtr, i);
-        // TODO validar ponto
-        if (!grid_isPointValid(gridPtr, coordinatePtr->x, coordinatePtr->y, coordinatePtr->z))
-            abort();
+        if (!grid_isPointValid(gridPtr,
+                               coordinatePtr->x,
+                               coordinatePtr->y,
+                               coordinatePtr->z))
+        {
+            fprintf(stderr, "Error: %s (%li, %li, %li) invalid\n",
+                    type, coordinatePtr->x, coordinatePtr->y, coordinatePtr->z);
+            exit(1);
+        }
     }
     grid_addPath(gridPtr, vectorPtr);
 }
 
 /* =============================================================================
  * maze_read
+ * -- Return number of path to route
  * =============================================================================
  */
 
-long maze_read (maze_t* mazePtr, char *input_file){      //NOTA add file name argument
+long maze_read (maze_t* mazePtr, char *input_file) {
     
     /*
      * Parse input from stdin
@@ -159,15 +166,14 @@ long maze_read (maze_t* mazePtr, char *input_file){      //NOTA add file name ar
     vector_t* wallVectorPtr = mazePtr->wallVectorPtr;
     vector_t* srcVectorPtr = mazePtr->srcVectorPtr;
     vector_t* dstVectorPtr = mazePtr->dstVectorPtr;
-
-    FILE *fp = fopen(input_file, "r");      //NOTA  abre o ficheiro com o input
+    
+    FILE *fp = fopen(input_file, "r");
     if (fp == NULL) {
         perror(input_file);
         exit(1);
     }
 
-    
-    while (fgets(line, sizeof(line), fp)) { //NOTA passa a ler do ficheiro
+    while (fgets(line, sizeof(line), fp)) {
         
         char code;
         long x1, y1, z1;
@@ -264,32 +270,24 @@ long maze_read (maze_t* mazePtr, char *input_file){      //NOTA add file name ar
         queue_push(workQueuePtr, (void*)coordinatePairPtr);
     }
     list_free(workListPtr);
-
-    fclose(fp);             //NOTA close file
-    
+    fclose(fp);
     return vector_getSize(srcVectorPtr);
 }
 
 //===========================================================================================
-
-
-char* create_output_file(char *input_file) {
+ char* create_output_file(char *input_file) {
     int len_file_name = strlen(input_file);
     char* file_name = (char*) malloc(sizeof(char) * len_file_name + strlen(".res.old") + 1);
     char* res_file; 
-
-    file_name = strcpy(file_name, input_file);
+     file_name = strcpy(file_name, input_file);
     file_name = strcat(file_name, ".res");
     res_file = strdup(file_name);
-
-    if (access(file_name, F_OK) != -1) {               //existe .res
+     if (access(file_name, F_OK) != -1) {               //existe .res
         file_name = strcat(file_name, ".old");
-
-        if (access(file_name, F_OK) != -1)                //existe .old
+         if (access(file_name, F_OK) != -1)                //existe .old
             if(remove(file_name) == -1)
                 abort();
-
-        int flag = rename(res_file, file_name);
+         int flag = rename(res_file, file_name);
         if (flag == -1)      
             abort();
             
@@ -297,26 +295,23 @@ char* create_output_file(char *input_file) {
         
     }
     else {
-
-        FILE *fp = fopen(res_file, "w");
+         FILE *fp = fopen(res_file, "w");
         if (fp == NULL) {
             perror(res_file);
             abort();
         }
         fclose(fp);
-
-        return res_file;
+         return res_file;
     }
 }
-
-//==========================================================================================
+ //==========================================================================================
 
 /* =============================================================================
  * maze_checkPaths
  * =============================================================================
  */
 bool_t maze_checkPaths (maze_t* mazePtr, list_t* pathVectorListPtr, char *input_file){
-    grid_t* gridPtr = mazePtr->gridPtr;                
+    grid_t* gridPtr = mazePtr->gridPtr;
     long width  = gridPtr->width;
     long height = gridPtr->height;
     long depth  = gridPtr->depth;
@@ -414,7 +409,6 @@ bool_t maze_checkPaths (maze_t* mazePtr, list_t* pathVectorListPtr, char *input_
     grid_print_to_file(testGridPtr, f);
 
     grid_free(testGridPtr);
-
     return TRUE;
 }
 

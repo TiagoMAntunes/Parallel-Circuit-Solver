@@ -45,229 +45,135 @@
  *
  * =============================================================================
  *
- * grid.c
+ * grid.h
  *
  * =============================================================================
  */
 
 
-#include <assert.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include "coordinate.h"
-#include "grid.h"
+#ifndef GRID_H
+#define GRID_H 1
+
+
 #include "lib/types.h"
 #include "lib/vector.h"
+#include <stdio.h>
 
 
-const unsigned long CACHE_LINE_SIZE = 32UL;
+typedef struct grid {
+    long width;
+    long height;
+    long depth;
+    long* points;
+    long* points_unaligned;
+} grid_t;
+
+enum {
+    GRID_POINT_FULL  = -2L,
+    GRID_POINT_EMPTY = -1L
+};
 
 
 /* =============================================================================
  * grid_alloc
  * =============================================================================
  */
-grid_t* grid_alloc (long width, long height, long depth){
-    grid_t* gridPtr;
+grid_t* grid_alloc (long width, long height, long depth);
 
-    gridPtr = (grid_t*)malloc(sizeof(grid_t));
-    if (gridPtr) {
-        gridPtr->width  = width;
-        gridPtr->height = height;
-        gridPtr->depth  = depth;
-        long n = width * height * depth;
-        long* points_unaligned = (long*)malloc(n * sizeof(long) + CACHE_LINE_SIZE);
-        assert(points_unaligned);
-        gridPtr->points_unaligned = points_unaligned;
-        gridPtr->points = (long*)((char*)(((unsigned long)points_unaligned
-                                          & ~(CACHE_LINE_SIZE-1)))
-                                  + CACHE_LINE_SIZE);
-        memset(gridPtr->points, GRID_POINT_EMPTY, (n * sizeof(long)));
-    }
-
-    return gridPtr;
-}
 
 /* =============================================================================
  * grid_free
  * =============================================================================
  */
-void grid_free (grid_t* gridPtr){
-    free(gridPtr->points_unaligned);
-    free(gridPtr);
-}
+void grid_free (grid_t* gridPtr);
 
 
 /* =============================================================================
  * grid_copy
  * =============================================================================
  */
-void grid_copy (grid_t* dstGridPtr, grid_t* srcGridPtr){
-    assert(srcGridPtr->width  == dstGridPtr->width);
-    assert(srcGridPtr->height == dstGridPtr->height);
-    assert(srcGridPtr->depth  == dstGridPtr->depth);
-
-    long n = srcGridPtr->width * srcGridPtr->height * srcGridPtr->depth;
-    memcpy(dstGridPtr->points, srcGridPtr->points, (n * sizeof(long)));
-}
+void grid_copy (grid_t* dstGridPtr, grid_t* srcGridPtr);
 
 
 /* =============================================================================
  * grid_isPointValid
  * =============================================================================
  */
-bool_t grid_isPointValid (grid_t* gridPtr, long x, long y, long z){
-    if (x < 0 || x >= gridPtr->width  ||
-        y < 0 || y >= gridPtr->height ||
-        z < 0 || z >= gridPtr->depth)
-    {
-        return FALSE;
-    }
-
-    return TRUE;
-}
+bool_t grid_isPointValid (grid_t* gridPtr, long x, long y, long z);
 
 
 /* =============================================================================
  * grid_getPointRef
  * =============================================================================
  */
-long* grid_getPointRef (grid_t* gridPtr, long x, long y, long z){
-    return &(gridPtr->points[(z * gridPtr->height + y) * gridPtr->width + x]);
-}
+long* grid_getPointRef (grid_t* gridPtr, long x, long y, long z);
 
 
 /* =============================================================================
  * grid_getPointIndices
  * =============================================================================
  */
-void grid_getPointIndices (grid_t* gridPtr, long* gridPointPtr, long* xPtr, long* yPtr, long* zPtr){
-    long height = gridPtr->height;
-    long width  = gridPtr->width;
-    long area = height * width;
-    long index3d = (gridPointPtr - gridPtr->points);
-    (*zPtr) = index3d / area;
-    long index2d = index3d % area;
-    (*yPtr) = index2d / width;
-    (*xPtr) = index2d % width;
-}
+void grid_getPointIndices (grid_t* gridPtr, long* gridPointPtr, long* xPtr, long* yPtr, long* zPtr);
 
 
 /* =============================================================================
  * grid_getPoint
  * =============================================================================
  */
-long grid_getPoint (grid_t* gridPtr, long x, long y, long z){
-    return *grid_getPointRef(gridPtr, x, y, z);
-}
+long grid_getPoint (grid_t* gridPtr, long x, long y, long z);
 
 
 /* =============================================================================
  * grid_isPointEmpty
  * =============================================================================
  */
-bool_t grid_isPointEmpty (grid_t* gridPtr, long x, long y, long z){
-    long value = grid_getPoint(gridPtr, x, y, z);
-    return ((value == GRID_POINT_EMPTY) ? TRUE : FALSE);
-}
+bool_t grid_isPointEmpty (grid_t* gridPtr, long x, long y, long z);
 
 
 /* =============================================================================
  * grid_isPointFull
  * =============================================================================
  */
-bool_t grid_isPointFull (grid_t* gridPtr, long x, long y, long z){
-    long value = grid_getPoint(gridPtr, x, y, z);
-    return ((value == GRID_POINT_FULL) ? TRUE : FALSE);
-}
+bool_t grid_isPointFull (grid_t* gridPtr, long x, long y, long z);
 
 
 /* =============================================================================
  * grid_setPoint
  * =============================================================================
  */
-void grid_setPoint (grid_t* gridPtr, long x, long y, long z, long value){
-    (*grid_getPointRef(gridPtr, x, y, z)) = value;
-}
+void grid_setPoint (grid_t* gridPtr, long x, long y, long z, long value);
 
 
 /* =============================================================================
  * grid_addPath
  * =============================================================================
  */
-void grid_addPath (grid_t* gridPtr, vector_t* pointVectorPtr){
-    long i;
-    long n = vector_getSize(pointVectorPtr);
-
-    for (i = 0; i < n; i++) {
-        coordinate_t* coordinatePtr = (coordinate_t*)vector_at(pointVectorPtr, i);
-        long x = coordinatePtr->x;
-        long y = coordinatePtr->y;
-        long z = coordinatePtr->z;
-        grid_setPoint(gridPtr, x, y, z, GRID_POINT_FULL);
-    }
-}
+void grid_addPath (grid_t* gridPtr, vector_t* pointVectorPtr);
 
 
 /* =============================================================================
  * grid_addPath_Ptr
  * =============================================================================
  */
-void grid_addPath_Ptr (grid_t* gridPtr, vector_t* pointVectorPtr){
-    long i;
-    long n = vector_getSize(pointVectorPtr);
-
-    for (i = 1; i < (n-1); i++) {
-        long* gridPointPtr = (long*)vector_at(pointVectorPtr, i);
-        *gridPointPtr = GRID_POINT_FULL; 
-    }
-}
+void grid_addPath_Ptr (grid_t* gridPtr, vector_t* pointVectorPtr);
 
 
 /* =============================================================================
  * grid_print
  * =============================================================================
  */
-void grid_print (grid_t* gridPtr){
-    // TODO implementar esta funcao
-    // Sugestão: usem as opções de formatação do output do printf para impor espaço fixo
-    // entre os elementos da grelha. Por exemplo: printf("%4li", valor-a-imprimir);
-    long * points = gridPtr->points;
-    long width = gridPtr->width, height = gridPtr->height, depth = gridPtr->depth;
+void grid_print (grid_t* gridPtr);
 
-    for (long z = 0; z < depth; z++) {
-        printf("[z = %ld]\n", z);
-        for (long i = 0; i < height; i++ ) {
-            for (long j = 0; j < width; j++) {
-                printf(" %4ld", points[j + i*width + z*height*width]);
-            }
-            printf("\n");
-        }
-    }
-}
 
 /* =============================================================================
  * grid_print_to_file
  * =============================================================================
  */
-void grid_print_to_file(grid_t* gridPtr, FILE *f) {
-    long * points = gridPtr->points;
-    long width = gridPtr->width, height = gridPtr->height, depth = gridPtr->depth;
+void grid_print_to_file (grid_t* gridPtr, FILE *f);
 
-    for (long z = 0; z < depth; z++) {
-        fprintf(f, "[z = %ld]\n", z);
-        for (long i = 0; i < height; i++ ) {
-            for (long j = 0; j < width; j++) {
-                fprintf(f, " %4ld", points[j + i*width + z*height*width]);
-            }
-            fprintf(f, "\n");
-        }
-    }
-    int flag = fclose(f);
-    if (flag != 0)
-        abort();
-}
+#endif /* GRID_H */
+
+
 /* =============================================================================
  *
  * End of grid.c
