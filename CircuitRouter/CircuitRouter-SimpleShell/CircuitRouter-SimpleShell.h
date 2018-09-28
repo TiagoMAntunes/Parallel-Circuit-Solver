@@ -1,0 +1,1 @@
+void newProcess(char * filename);
