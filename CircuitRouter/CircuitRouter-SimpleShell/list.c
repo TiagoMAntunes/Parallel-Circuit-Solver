@@ -7,6 +7,8 @@ Node createNode(Process * p) {
     Node n = malloc(sizeof(struct node));
     n->item = p;
     n->next = NULL;
+    
+    return n;
 }
 
 void freeNode(Node p) {
@@ -47,8 +49,7 @@ Node next(Node h) {
     return h->next;
 }
 
-void print(Node h) {
-    for (Node a = h->next; a != NULL; a = a->next) {
-        printf("Process with PID %d\n", a->item->pid);
-    }
+void printAll(Node h) {
+    for (Node a = h->next; a != NULL; a = a->next) 
+        printProcess(a->item);
 }

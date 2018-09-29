@@ -19,4 +19,4 @@ void freeAll(Node head);
 
 Node next(Node h);
 
-void print(Node h);
+void printAll(Node h);

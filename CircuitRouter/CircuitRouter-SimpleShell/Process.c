@@ -1,13 +1,14 @@
 #include "Process.h"
-#include <time.h>
+#include "../lib/timer.h"
 #include <stdlib.h>
+#include <stdio.h>
 
 Process * createProcess(int pid) {
     Process * p = malloc(sizeof(struct process));
     p->pid = pid;
     p->status = -1;
-    p->start = -1;
-    p->finish = -1;
+/*    p->start = -1;
+    p->finish = -1;     */
     return p;
 }
 
@@ -15,8 +16,8 @@ void freeProcess(Process * p) {
     free(p);
 }
 
-int processTime(Process * p) {
-    return p->finish - p->start;
+float processTime(Process * p) {
+    return TIMER_DIFF_SECONDS(p->start, p->finish);
 }
 
 int status(Process * p) {
@@ -25,4 +26,10 @@ int status(Process * p) {
 
 int getPid(Process * p) {
     return p->pid;
+}
+
+void printProcess(Process * p) {
+    printf("CHILD EXITED (PID=%d; return %s;"" %f s)\n", getPid(p), 
+                                    (status(p) == 0 ? "OK" : "NOK"), 
+                                    processTime(p));
 }
