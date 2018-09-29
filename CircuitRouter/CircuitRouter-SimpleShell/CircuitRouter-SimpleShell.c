@@ -23,13 +23,15 @@ int main(int argc, char * argv[]) {
     } else 
         MAXCHILDREN = 0;
 
-    while(strcmp("exit\n", input)) {
+    while(1) {
         fgets(input, 10000, stdin);
-        command = strtok(input, " ");
+        command = strtok(input, " \n\0");
         if (!strcmp(command, "run")) {
             filename = strtok(NULL, " \n");
             manageProcesses(filename);
-        } else {
+        } else if (!strcmp(command, "exit"))
+            break;
+        else {
             printf("Invalid command\n");
         }
     }
