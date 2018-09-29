@@ -1,4 +1,4 @@
-CFLAGS = -Wall -g
+CFLAGS = -Wall -g -std=gnu99
 TARGET = CircuitRouter-SimpleShell
 SOURCES = (wildcard *.c)
 all:

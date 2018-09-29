@@ -54,6 +54,7 @@ int main(int argc, char * argv[]) {
     }
 
     printAll(deadProcesses);
+    printf("END.\n");
 
     freeAll(liveProcesses);
     freeAll(deadProcesses);
