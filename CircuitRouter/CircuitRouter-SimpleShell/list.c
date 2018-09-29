@@ -35,10 +35,10 @@ Process *getByPID(int pid, Node head) {
     for (Node h = head->next; h != NULL; h = h->next)
         if (getPid(h->item) == pid) 
             return h->item;
+    return NULL;
 }
 
 void freeAll(Node head) {
-    Node aux;
     for (Node h = head, aux = h; h != NULL; aux = h) {
         h = h->next;
         freeNode(aux);

@@ -7,6 +7,7 @@
 #include "list.h"
 #include "../lib/timer.h"
 
+
 void manageProcesses(char * filename);
 void newProcess(char * filename);
 Node updateStatus(int state, int pid, Node h);
@@ -66,7 +67,7 @@ void manageProcesses(char * filename) {
     TIMER_T stopTime;   //=============================
     //printf("%d\n", currentProcesses); //debug only
 
-    if (!MAXCHILDREN || MAXCHILDREN && currentProcesses < MAXCHILDREN) { //can start right away
+    if (!MAXCHILDREN || (MAXCHILDREN && currentProcesses) < MAXCHILDREN) { //can start right away
         newProcess(filename);   //================
 
     } else if (currentProcesses >= MAXCHILDREN) { //need to wait for a process to finish
@@ -84,7 +85,7 @@ void manageProcesses(char * filename) {
 }
 
 void newProcess(char * filename) {
-    int pid, status;
+    int pid;
     TIMER_T startTime;
 
     TIMER_READ(startTime);
