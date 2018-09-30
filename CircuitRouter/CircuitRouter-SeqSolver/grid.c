@@ -265,9 +265,6 @@ void grid_print_to_file(grid_t* gridPtr, FILE *f) {
             fprintf(f, "\n");
         }
     }
-    int flag = fclose(f);
-    if (flag != 0)
-        abort();
 }
 
 

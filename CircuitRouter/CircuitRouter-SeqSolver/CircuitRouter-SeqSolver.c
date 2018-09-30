@@ -250,7 +250,10 @@ int main(int argc, char** argv){
     bool_t status = maze_checkPaths(mazePtr, pathVectorListPtr, output_file);
     assert(status == TRUE);
 
-    fclose(output_file);
+    int flag = fclose(output_file);
+    if (flag != 0)
+        abort();
+    
     free(output_file_name);
     maze_free(mazePtr);
     router_free(routerPtr);
