@@ -54,8 +54,6 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
-#include <unistd.h>
 #include "coordinate.h"
 #include "grid.h"
 #include "lib/list.h"
@@ -152,7 +150,7 @@ static void addToGrid (grid_t* gridPtr, vector_t* vectorPtr, char* type){
  * =============================================================================
  */
 
-long maze_read (maze_t* mazePtr, char *input_file) {
+long maze_read (maze_t* mazePtr, char *input_file, FILE *output_file) {
     
     /*
      * Parse input from stdin
@@ -256,8 +254,8 @@ long maze_read (maze_t* mazePtr, char *input_file) {
     addToGrid(gridPtr, wallVectorPtr, "wall");
     addToGrid(gridPtr, srcVectorPtr,  "source");
     addToGrid(gridPtr, dstVectorPtr,  "destination");
-    printf("Maze dimensions = %li x %li x %li\n", width, height, depth);
-    printf("Paths to route  = %li\n", list_getSize(workListPtr));
+    fprintf(output_file, "Maze dimensions = %li x %li x %li\n", width, height, depth);
+    fprintf(output_file, "Paths to route  = %li\n", list_getSize(workListPtr));
     
     /*
      * Initialize work queue
@@ -275,54 +273,14 @@ long maze_read (maze_t* mazePtr, char *input_file) {
 }
 
 //===========================================================================================
- char* create_output_file(char *input_file) {
-    int len_file_name = strlen(input_file);
-    char* file_name = (char*) malloc(sizeof(char) * len_file_name + strlen(".res.old") + 1);
-    char* res_file; 
 
-    file_name = strcpy(file_name, input_file);
-    file_name = strcat(file_name, ".res");
-    res_file = strdup(file_name);
-
-     if (access(file_name, F_OK) != -1) {               //existe .res
-        file_name = strcat(file_name, ".old");
-         if (access(file_name, F_OK) != -1)             //existe .old
-            if(remove(file_name) == -1){
-                free(file_name);
-                free(res_file);
-                abort();
-            }
-
-        int flag = rename(res_file, file_name);
-        free(file_name);
-        if (flag == -1){
-            free(res_file);  
-            abort();
-        }
-
-        return res_file;
-        
-    }
-    else {
-        free(file_name);
-        FILE *fp = fopen(res_file, "w");
-        if (fp == NULL) {
-            perror(res_file);
-            free(res_file);
-            abort();
-        }
-
-        fclose(fp);
-        return res_file;
-    }
-}
  //==========================================================================================
 
 /* =============================================================================
  * maze_checkPaths
  * =============================================================================
  */
-bool_t maze_checkPaths (maze_t* mazePtr, list_t* pathVectorListPtr, char *input_file){
+bool_t maze_checkPaths (maze_t* mazePtr, list_t* pathVectorListPtr, FILE *output_file){
     grid_t* gridPtr = mazePtr->gridPtr;
     long width  = gridPtr->width;
     long height = gridPtr->height;
@@ -411,15 +369,9 @@ bool_t maze_checkPaths (maze_t* mazePtr, list_t* pathVectorListPtr, char *input_
         } /* iteratate over pathVector */
     } /* iterate over pathVectorList */
 
-    char *file_name = create_output_file(input_file);
-            
-    FILE *f = fopen(file_name, "w");
-    free(file_name);
-    if (f == NULL) 
-        exit(1);
-    
-    fprintf(f, "Routed Maze:\n");
-    grid_print_to_file(testGridPtr, f);
+             
+    fprintf(output_file, "Routed Maze:\n");
+    grid_print_to_file(testGridPtr, output_file);
 
     grid_free(testGridPtr);
     return TRUE;
