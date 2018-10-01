@@ -7,8 +7,6 @@ Process * createProcess(int pid) {
     Process * p = malloc(sizeof(struct process));
     p->pid = pid;
     p->status = -1;
-/*    p->start = -1;
-    p->finish = -1;     */
     return p;
 }
 
@@ -29,7 +27,6 @@ int getPid(Process * p) {
 }
 
 void printProcess(Process * p) {
-    printf("CHILD EXITED (PID=%d; return %s;"" %f s)\n", getPid(p), 
-                                    (status(p) == 0 ? "OK" : "NOK"), 
-                                    processTime(p));
+    printf("CHILD EXITED (PID=%d; return %s)\n", getPid(p), 
+                                    (status(p) == 0 ? "OK" : "NOK"));
 }

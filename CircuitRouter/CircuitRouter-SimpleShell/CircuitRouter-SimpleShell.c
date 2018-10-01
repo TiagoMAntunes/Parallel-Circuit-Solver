@@ -5,19 +5,17 @@
 #include <sys/wait.h>
 #include "Process.h"
 #include "list.h"
-#include "../lib/timer.h"
 #include "../lib/commandlinereader.h"
 
 void manageProcesses(char * filename);
 void newProcess(char * filename);
 Node updateStatus(int state, int pid, Node h);
 
-int MAXCHILDREN, currentProcesses = 0, count = 0;
+int MAXCHILDREN, currentProcesses = 0;
 Node liveProcesses, deadProcesses;
 
 int main(int argc, char * argv[]) {
     char **args, *buf;
-    TIMER_T stopTime;       //=======================
 
     buf = malloc(sizeof(char) * 10000);
     args = malloc(sizeof(char *) * 3);
@@ -32,11 +30,10 @@ int main(int argc, char * argv[]) {
         readLineArguments(args, 3, buf, 10000);
         if (!strcmp(args[0], "exit"))
             break;
-        else if (!strcmp(args[0], "run")) {
-            manageProcesses(args[2]);
-        } else {
+        else if (!strcmp(args[0], "run")) 
+            manageProcesses(args[1]);
+        else 
             printf("Invalid arguments\n");
-        }
     }
 
     //after exit, we must finish all tasks and free memory
@@ -44,9 +41,7 @@ int main(int argc, char * argv[]) {
     while(next(liveProcesses) != NULL) {
         pid = wait(&state);
 
-        TIMER_READ(stopTime);       //=========================
         Node new = updateStatus(state, pid, liveProcesses);
-        new->item->finish = stopTime;
         
         insert(deadProcesses, new);
         removeByPID(pid, liveProcesses);
@@ -61,18 +56,15 @@ int main(int argc, char * argv[]) {
 
 void manageProcesses(char * filename) {
     int pid, state;
-    TIMER_T stopTime;   //=============================
     //printf("%d\n", currentProcesses); //debug only
 
     if (!MAXCHILDREN || (MAXCHILDREN && currentProcesses) < MAXCHILDREN) { //can start right away
-        newProcess(filename);   //================
+        newProcess(filename);   
 
     } else if (currentProcesses >= MAXCHILDREN) { //need to wait for a process to finish
         pid = wait(&state);
 
-        TIMER_READ(stopTime);
         Node new = updateStatus(state, pid, liveProcesses);
-        new->item->finish = stopTime;
 
         currentProcesses--;
         insert(deadProcesses, new);        
@@ -83,9 +75,6 @@ void manageProcesses(char * filename) {
 
 void newProcess(char * filename) {
     int pid;
-    TIMER_T startTime;
-
-    TIMER_READ(startTime);
 
     pid = fork();
     if (pid < 0) {
@@ -100,10 +89,8 @@ void newProcess(char * filename) {
     } else {
  
         Process * p = createProcess(pid); //creates new process and adds it to the list
-        p->start = startTime;   
         insert(liveProcesses, createNode(p));
         currentProcesses++;
-        count++;
     }
 }
 
