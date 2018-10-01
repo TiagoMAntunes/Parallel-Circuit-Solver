@@ -6,7 +6,7 @@
 #include "Process.h"
 #include "list.h"
 #include "../lib/timer.h"
-
+#include "../lib/commandlinereader.h"
 
 void manageProcesses(char * filename);
 void newProcess(char * filename);
@@ -16,11 +16,11 @@ int MAXCHILDREN, currentProcesses = 0, count = 0;
 Node liveProcesses, deadProcesses;
 
 int main(int argc, char * argv[]) {
-    char * input  = calloc(10000, sizeof(char)); //TODO: Make adaptive function to fit any size of input 
-    char * command, *filename;
-
+    char **args, *buf;
     TIMER_T stopTime;       //=======================
 
+    buf = malloc(sizeof(char) * 10000);
+    args = malloc(sizeof(char *) * 3);
     liveProcesses = createNode(NULL); //list of processes running
     deadProcesses = createNode(NULL); //list of processes that have finished
     if (argc > 1) {
@@ -29,15 +29,13 @@ int main(int argc, char * argv[]) {
         MAXCHILDREN = 0;
 
     while(1) {
-        fgets(input, 10000, stdin);
-        command = strtok(input, " \n\0");
-        if (!strcmp(command, "run")) {
-            filename = strtok(NULL, " \n");
-            manageProcesses(filename);  //=====================
-        } else if (!strcmp(command, "exit"))
+        readLineArguments(args, 3, buf, 10000);
+        if (!strcmp(args[0], "exit"))
             break;
-        else {
-            printf("Invalid command\n");
+        else if (!strcmp(args[0], "run")) {
+            manageProcesses(args[2]);
+        } else {
+            printf("Invalid arguments\n");
         }
     }
 
@@ -59,7 +57,6 @@ int main(int argc, char * argv[]) {
 
     freeAll(liveProcesses);
     freeAll(deadProcesses);
-    free(input);
 }
 
 void manageProcesses(char * filename) {
