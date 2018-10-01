@@ -58,7 +58,7 @@ void manageProcesses(char * filename) {
     int pid, state;
     //printf("%d\n", currentProcesses); //debug only
 
-    if (!MAXCHILDREN || (MAXCHILDREN && currentProcesses) < MAXCHILDREN) { //can start right away
+    if (!MAXCHILDREN || (MAXCHILDREN && (currentProcesses < MAXCHILDREN))) { //can start right away
         newProcess(filename);   
 
     } else if (currentProcesses >= MAXCHILDREN) { //need to wait for a process to finish
