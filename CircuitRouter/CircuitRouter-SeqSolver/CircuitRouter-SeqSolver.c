@@ -206,11 +206,20 @@ int main(int argc, char** argv){
     maze_t* mazePtr = maze_alloc();
     assert(mazePtr);
     
-    char *input_file = argv[argc - 1];
-    char *output_file_name = create_output_file(input_file);
-    FILE *output_file = fopen(output_file_name, "w");
-    if (output_file == NULL) 
+    char *input_file_name = argv[argc - 1];
+    char *output_file_name = create_output_file(input_file_name);
+
+    FILE *input_file = fopen(input_file_name, "r");
+    if (input_file == NULL) {
+        perror(input_file_name);
         exit(1);
+    }
+
+    FILE *output_file = fopen(output_file_name, "w");
+    if (output_file == NULL) {
+        perror(output_file_name);
+        exit(1);
+    }
 
     long numPathToRoute = maze_read(mazePtr, input_file, output_file);
     
@@ -250,7 +259,11 @@ int main(int argc, char** argv){
     bool_t status = maze_checkPaths(mazePtr, pathVectorListPtr, output_file);
     assert(status == TRUE);
 
-    int flag = fclose(output_file);
+    int flag = fclose(input_file);
+    if (flag != 0)
+        abort();
+
+    flag = fclose(output_file);
     if (flag != 0)
         abort();
     
