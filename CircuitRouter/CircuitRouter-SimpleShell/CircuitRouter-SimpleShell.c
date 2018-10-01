@@ -52,6 +52,9 @@ int main(int argc, char * argv[]) {
 
     freeAll(liveProcesses);
     freeAll(deadProcesses);
+    free(buf);
+    free(args);
+	 
 }
 
 void manageProcesses(char * filename) {

@@ -1,3 +1,8 @@
+Maze dimensions = 48 x 48 x 3
+Paths to route  = 48
+Paths routed    = 48
+Elapsed time    = 0.091439 seconds
+Verification passed.
 Routed Maze:
 [z = 0]
    -1   -1   -1   -1   -1   -1   -1   -1   -1   -1   -1   -1   -1   -1   -1   -1   -1   -1   -1   -1   -1   -1   -1   -1   -1   -1   -1   -1   -1   -1   -1   -1   -1   -1   -1   -1   -1   -1   -1   -1   -1   -1   -1   -1   -1   -1   -1   -1
