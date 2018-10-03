@@ -160,37 +160,31 @@ char* create_output_file(char *input_file) {
     file_name = strcat(file_name, ".res");
     res_file = strdup(file_name);
 
-     if (access(file_name, F_OK) != -1) {               //existe .res
+     if (access(file_name, F_OK) != -1) {               //.res file exists
         file_name = strcat(file_name, ".old");
-         if (access(file_name, F_OK) != -1)             //existe .old
-            if(remove(file_name) == -1){
-                free(file_name);
-                free(res_file);
-                abort();
-            }
 
         int flag = rename(res_file, file_name);
-        free(file_name);
         if (flag == -1){
             free(res_file);  
             abort();
         }
 
+        free(file_name);
+
         return res_file;
         
     }
-    else {
-        free(file_name);
-        FILE *fp = fopen(res_file, "w");
-        if (fp == NULL) {
-            perror(res_file);
-            free(res_file);
-            abort();
-        }
-
-        fclose(fp);
-        return res_file;
+    FILE *fp = fopen(res_file, "w");
+    if (fp == NULL) {
+        perror(res_file);
+        free(res_file);
+        abort();
     }
+
+    free(file_name);
+    fclose(fp);
+    return res_file;
+    
 }
 
 /* =============================================================================
