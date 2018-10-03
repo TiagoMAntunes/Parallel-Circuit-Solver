@@ -85,8 +85,8 @@ void newProcess(char * filename) {
     }
     else if (pid == 0) { //child process executes a new seq-solver
         //printf("Creating process with file %s\n", filename);
-        
-        execl("../CircuitRouter-SeqSolver/CircuitRouter-SeqSolver", filename, NULL);
+        char * argv[] = {"../CircuitRouter-SeqSolver/CircuitRouter-SeqSolver", filename, NULL};
+        execv(argv[0], argv);
         
 
     } else {
