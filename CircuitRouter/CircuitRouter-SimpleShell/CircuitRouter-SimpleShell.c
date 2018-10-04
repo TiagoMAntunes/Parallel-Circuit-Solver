@@ -84,6 +84,7 @@ void newProcess(char ** args) {
     else if (pid == 0) { //child process executes a new seq-solver
         //printf("Creating process with file %s\n", filename);
         execv(args[0], args);
+	abort();
     } else {
         Process * p = createProcess(pid); //creates new process and adds it to the list
         insert(liveProcesses, createNode(p));
