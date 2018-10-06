@@ -165,7 +165,7 @@ long maze_read (maze_t* mazePtr, FILE *input_file, FILE *output_file) {
     vector_t* srcVectorPtr = mazePtr->srcVectorPtr;
     vector_t* dstVectorPtr = mazePtr->dstVectorPtr;
     
-    while (fgets(line, sizeof(line), input_file)) {
+    while (fgets(line, sizeof(line), input_file)) {     //Reads from input file
         
         char code;
         long x1, y1, z1;
@@ -362,7 +362,7 @@ bool_t maze_checkPaths (maze_t* mazePtr, list_t* pathVectorListPtr, FILE *output
         } /* iteratate over pathVector */
     } /* iterate over pathVectorList */
 
-             
+    //Print routed Maze to output file         
     fprintf(output_file, "Routed Maze:\n");
     grid_print_to_file(testGridPtr, output_file);
 

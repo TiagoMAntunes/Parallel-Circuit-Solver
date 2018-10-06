@@ -137,7 +137,7 @@ static void parseArgs (long argc, char* const argv[]){
     }
 
     for (i = optind; i < argc - 1; i++) {
-        fprintf(stderr, "Non-option argument: %s\n", argv[i]);
+        printf(stderr, "Non-option argument: %s\n", argv[i]);
         opterr++;
     }
 
@@ -160,12 +160,12 @@ char* create_output_file(char *input_file) {
     file_name = strcat(file_name, ".res");
     res_file = strdup(file_name);
 
-     if (access(file_name, F_OK) != -1) {               //.res file exists
+     if (access(file_name, F_OK) != -1) {        //.res file exists
         file_name = strcat(file_name, ".old");
 
-        int flag = rename(res_file, file_name);
-        if (flag == -1){
-            free(res_file);  
+        int flag = rename(res_file, file_name);  //Create or replace .old file
+        if (flag == -1){        //Error management
+            free(res_file);         
             abort();
         }
 
@@ -174,15 +174,18 @@ char* create_output_file(char *input_file) {
         return res_file;
         
     }
-    FILE *fp = fopen(res_file, "w");
-    if (fp == NULL) {
+
+    FILE *fp = fopen(res_file, "w");   //Create .res file    
+    if (fp == NULL) {          //Error management         
         perror(res_file);
         free(res_file);
         abort();
     }
 
+    //Clean up
     free(file_name);
     fclose(fp);
+
     return res_file;
     
 }
@@ -203,13 +206,13 @@ int main(int argc, char** argv){
     char *output_file_name = create_output_file(input_file_name);
 
     FILE *input_file = fopen(input_file_name, "r");
-    if (input_file == NULL) {
+    if (input_file == NULL) {           //Error management
         perror(input_file_name);
         exit(1);
     }
 
     FILE *output_file = fopen(output_file_name, "w");
-    if (output_file == NULL) {
+    if (output_file == NULL) {          //Error management
         perror(output_file_name);
         exit(1);
     }
@@ -253,11 +256,11 @@ int main(int argc, char** argv){
     assert(status == TRUE);
 
     int flag = fclose(input_file);
-    if (flag != 0)
+    if (flag != 0)          //Error management
         abort();
 
     flag = fclose(output_file);
-    if (flag != 0)
+    if (flag != 0)          //Error management
         abort();
     
     free(output_file_name);
