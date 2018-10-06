@@ -16,13 +16,17 @@ Node updateStatus(int state, int pid, Node h);
 int MAXCHILDREN, currentProcesses = 0;
 Node liveProcesses, deadProcesses;
 
+/*******************************************************************************
+ * main
+ *******************************************************************************
+*/
 int main(int argc, char * argv[]) {
     char **args, *buf;
 
     buf = malloc(sizeof(char) * 10000);
     args = calloc(MAXARGS+1, sizeof(char *));
-    liveProcesses = createNode(NULL); //list of processes running
-    deadProcesses = createNode(NULL); //list of processes that have finished
+    liveProcesses = createNode(NULL);   //List of processes running
+    deadProcesses = createNode(NULL);   //List of processes that have finished
     if (argc > 1) {
         sscanf(argv[1], "%d", &MAXCHILDREN);
     } else 
@@ -39,7 +43,7 @@ int main(int argc, char * argv[]) {
             printf("Invalid arguments\n");
     }
 
-    //after exit, we must finish all tasks and free memory
+    //After exit, we must finish all tasks and free memory
     int pid, state;
     while(next(liveProcesses) != NULL) {
         pid = wait(&state);
@@ -56,17 +60,21 @@ int main(int argc, char * argv[]) {
     freeAll(liveProcesses);
     freeAll(deadProcesses);
     free(buf);
-    free(args);
-	 
+    free(args);	 
 }
 
+/*******************************************************************************
+ * manageProcesses
+ *******************************************************************************
+*/
 void manageProcesses(char ** args) {
     int pid, state;
-    //printf("%d\n", currentProcesses); //debug only
-    if (!MAXCHILDREN || (MAXCHILDREN && (currentProcesses < MAXCHILDREN))) { //can start right away
+    //Can start right away
+    if (!MAXCHILDREN || (MAXCHILDREN && (currentProcesses < MAXCHILDREN)))
         newProcess(args);   
-    } else if (currentProcesses >= MAXCHILDREN) { //need to wait for a process to finish
-        pid = wait(&state);
+
+    else if (currentProcesses >= MAXCHILDREN) {           //Need to wait for  
+        pid = wait(&state);                               //a process to finish
         Node new = updateStatus(state, pid, liveProcesses);
         currentProcesses--;
         insert(deadProcesses, new);        
@@ -75,28 +83,34 @@ void manageProcesses(char ** args) {
     }
 }
 
+/*******************************************************************************
+ * newProcess
+ *******************************************************************************
+*/
 void newProcess(char ** args) {
     int pid;
     pid = fork();
-    if (pid < 0) {
+    if (pid < 0) 
         abort();
-    }
-    else if (pid == 0) { //child process executes a new seq-solver
-        //printf("Creating process with file %s\n", filename);
+
+    else if (pid == 0) {            //Child process executes a new seq-solver
         execv(args[0], args);
-	abort();
+	    abort();
     } else {
-        Process * p = createProcess(pid); //creates new process and adds it to the list
-        insert(liveProcesses, createNode(p));
+        Process * p = createProcess(pid);           //Creates new process and 
+        insert(liveProcesses, createNode(p));       //adds it to the list
         currentProcesses++;
     }
 }
 
-
+/*******************************************************************************
+ * updateStatus
+ *******************************************************************************
+*/
 Node updateStatus(int state, int pid, Node h) {
-    int status = -1;
+    int status = -1;            //NOK
 
-    if (WIFEXITED(state))
+    if (WIFEXITED(state))       //If process exited properly, status is OK
         status = 0;
 
     Node new = createNode(getByPID(pid, liveProcesses));
