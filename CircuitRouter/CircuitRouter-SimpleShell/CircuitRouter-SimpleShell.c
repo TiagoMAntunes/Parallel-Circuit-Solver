@@ -16,17 +16,13 @@ Node updateStatus(int state, int pid, Node h);
 int MAXCHILDREN, currentProcesses = 0;
 Node liveProcesses, deadProcesses;
 
-/*******************************************************************************
- * main
- *******************************************************************************
-*/
 int main(int argc, char * argv[]) {
     char **args, *buf;
 
     buf = malloc(sizeof(char) * 10000);
     args = calloc(MAXARGS+1, sizeof(char *));
-    liveProcesses = createNode(NULL);   //List of processes running
-    deadProcesses = createNode(NULL);   //List of processes that have finished
+    liveProcesses = createNode(NULL); //list of processes running
+    deadProcesses = createNode(NULL); //list of processes that have finished
     if (argc > 1) {
         sscanf(argv[1], "%d", &MAXCHILDREN);
     } else 
@@ -34,16 +30,16 @@ int main(int argc, char * argv[]) {
 
     while(1) {
         readLineArguments(args, MAXARGS, buf, 10000);
-        if (!strcmp(args[0], "exit"))
+        if (*args != NULL && !strcmp(args[0], "exit"))
             break;
-        else if (!strcmp(args[0], "run"))  {
+        else if (*args != NULL && !strcmp(args[0], "run"))  {
             args[0] = "../CircuitRouter-SeqSolver/CircuitRouter-SeqSolver";
             manageProcesses(args);
         } else 
             printf("Invalid arguments\n");
     }
 
-    //After exit, we must finish all tasks and free memory
+    //after exit, we must finish all tasks and free memory
     int pid, state;
     while(next(liveProcesses) != NULL) {
         pid = wait(&state);
@@ -60,21 +56,17 @@ int main(int argc, char * argv[]) {
     freeAll(liveProcesses);
     freeAll(deadProcesses);
     free(buf);
-    free(args);	 
+    free(args);
+	 
 }
 
-/*******************************************************************************
- * manageProcesses
- *******************************************************************************
-*/
 void manageProcesses(char ** args) {
     int pid, state;
-    //Can start right away
-    if (!MAXCHILDREN || (MAXCHILDREN && (currentProcesses < MAXCHILDREN)))
+    //printf("%d\n", currentProcesses); //debug only
+    if (!MAXCHILDREN || (MAXCHILDREN && (currentProcesses < MAXCHILDREN))) { //can start right away
         newProcess(args);   
-
-    else if (currentProcesses >= MAXCHILDREN) {           //Need to wait for  
-        pid = wait(&state);                               //a process to finish
+    } else if (currentProcesses >= MAXCHILDREN) { //need to wait for a process to finish
+        pid = wait(&state);
         Node new = updateStatus(state, pid, liveProcesses);
         currentProcesses--;
         insert(deadProcesses, new);        
@@ -83,34 +75,28 @@ void manageProcesses(char ** args) {
     }
 }
 
-/*******************************************************************************
- * newProcess
- *******************************************************************************
-*/
 void newProcess(char ** args) {
     int pid;
     pid = fork();
-    if (pid < 0) 
+    if (pid < 0) {
         abort();
-
-    else if (pid == 0) {            //Child process executes a new seq-solver
+    }
+    else if (pid == 0) { //child process executes a new seq-solver
+        //printf("Creating process with file %s\n", filename);
         execv(args[0], args);
-	    abort();
+	abort();
     } else {
-        Process * p = createProcess(pid);           //Creates new process and 
-        insert(liveProcesses, createNode(p));       //adds it to the list
+        Process * p = createProcess(pid); //creates new process and adds it to the list
+        insert(liveProcesses, createNode(p));
         currentProcesses++;
     }
 }
 
-/*******************************************************************************
- * updateStatus
- *******************************************************************************
-*/
-Node updateStatus(int state, int pid, Node h) {
-    int status = -1;            //NOK
 
-    if (WIFEXITED(state))       //If process exited properly, status is OK
+Node updateStatus(int state, int pid, Node h) {
+    int status = -1;
+
+    if (WIFEXITED(state))
         status = 0;
 
     Node new = createNode(getByPID(pid, liveProcesses));

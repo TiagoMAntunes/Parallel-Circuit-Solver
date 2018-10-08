@@ -137,7 +137,7 @@ static void parseArgs (long argc, char* const argv[]){
     }
 
     for (i = optind; i < argc - 1; i++) {
-        printf(stderr, "Non-option argument: %s\n", argv[i]);
+        fprintf(stderr, "Non-option argument: %s\n", argv[i]);
         opterr++;
     }
 
@@ -208,13 +208,13 @@ int main(int argc, char** argv){
     FILE *input_file = fopen(input_file_name, "r");
     if (input_file == NULL) {           //Error management
         perror(input_file_name);
-        exit(1);
+        abort();
     }
 
     FILE *output_file = fopen(output_file_name, "w");
     if (output_file == NULL) {          //Error management
         perror(output_file_name);
-        exit(1);
+        abort();
     }
 
     long numPathToRoute = maze_read(mazePtr, input_file, output_file);
