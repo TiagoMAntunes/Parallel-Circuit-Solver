@@ -85,13 +85,13 @@ long global_params[256]; /* 256 = ascii limit */
  * displayUsage
  * =============================================================================
  */
-static void displayUsage (const char* appName){
-    printf("Usage: %s [options]\n", appName);
-    puts("\nOptions:                            (defaults)\n");
-    printf("    b <INT>    [b]end cost          (%i)\n", PARAM_DEFAULT_BENDCOST);
-    printf("    y <UINT>   [y] movement cost    (%i)\n", PARAM_DEFAULT_YCOST);
-    printf("    z <UINT>   [z] movement cost    (%i)\n", PARAM_DEFAULT_ZCOST);
-    printf("    h          [h]elp message       (false)\n");
+static void displayUsage (const char* appName, FILE *output_file){
+    fprintf(output_file, "Usage: %s [options]\n", appName);
+    fputs("\nOptions:                            (defaults)\n", output_file);
+    fprintf(output_file, "    b <INT>    [b]end cost          (%i)\n", PARAM_DEFAULT_BENDCOST);
+    fprintf(output_file, "    y <UINT>   [y] movement cost    (%i)\n", PARAM_DEFAULT_YCOST);
+    fprintf(output_file, "    z <UINT>   [z] movement cost    (%i)\n", PARAM_DEFAULT_ZCOST);
+    fprintf(output_file, "    h          [h]elp message       (false)\n");
     exit(1);
 }
 
@@ -112,7 +112,7 @@ static void setDefaultParams (){
  * parseArgs
  * =============================================================================
  */
-static void parseArgs (long argc, char* const argv[]){
+static int parseArgs (long argc, char* const argv[]){
     long i;
     long opt;
 
@@ -141,9 +141,7 @@ static void parseArgs (long argc, char* const argv[]){
         opterr++;
     }
 
-    if (opterr) {
-        displayUsage(argv[0]);
-    }
+    return opterr;
 }
 
 
@@ -198,7 +196,10 @@ int main(int argc, char** argv){
     /*
      * Initialization
      */
-    parseArgs(argc, (char** const)argv);
+
+
+    int opterr = parseArgs(argc, (char** const)argv);
+        
     maze_t* mazePtr = maze_alloc();
     assert(mazePtr);
     
@@ -216,6 +217,9 @@ int main(int argc, char** argv){
         perror(output_file_name);
         abort();
     }
+
+    if (opterr)
+        displayUsage(argv[0], output_file);
 
     long numPathToRoute = maze_read(mazePtr, input_file, output_file);
     
