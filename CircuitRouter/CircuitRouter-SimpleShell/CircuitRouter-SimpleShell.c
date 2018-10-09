@@ -84,7 +84,7 @@ void newProcess(char ** args) {
     else if (pid == 0) { //child process executes a new seq-solver
         //printf("Creating process with file %s\n", filename);
         execv(args[0], args);
-	abort();
+	    abort();
     } else {
         Process * p = createProcess(pid); //creates new process and adds it to the list
         insert(liveProcesses, createNode(p));
@@ -96,8 +96,9 @@ void newProcess(char ** args) {
 Node updateStatus(int state, int pid, Node h) {
     int status = -1;
 
-    if (WIFEXITED(state))
+    if (WIFEXITED(state) && (WEXITSTATUS(state) == 0)) {
         status = 0;
+    }
 
     Node new = createNode(getByPID(pid, liveProcesses));
     new->item->status = status;

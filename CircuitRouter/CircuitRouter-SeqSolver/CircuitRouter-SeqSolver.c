@@ -164,7 +164,7 @@ char* create_output_file(char *input_file) {
         int flag = rename(res_file, file_name);  //Create or replace .old file
         if (flag == -1){        //Error management
             free(res_file);         
-            abort();
+            exit(1);
         }
 
         free(file_name);
@@ -174,15 +174,16 @@ char* create_output_file(char *input_file) {
     }
 
     FILE *fp = fopen(res_file, "w");   //Create .res file    
-    if (fp == NULL) {          //Error management         
-        perror(res_file);
+    if (fp == NULL) {          //Error management       
         free(res_file);
-        abort();
+        exit(1);
     }
 
     //Clean up
     free(file_name);
-    fclose(fp);
+    int flag = fclose(fp);
+    if (flag != 0)          //Error management
+        exit(1);
 
     return res_file;
     
@@ -207,18 +208,17 @@ int main(int argc, char** argv){
     char *output_file_name = create_output_file(input_file_name);
 
     FILE *input_file = fopen(input_file_name, "r");
-    if (input_file == NULL) {           //Error management
-        perror(input_file_name);
-        abort();
-    }
-
     FILE *output_file = fopen(output_file_name, "w");
-    if (output_file == NULL) {          //Error management
-        perror(output_file_name);
-        abort();
+
+    if (output_file == NULL)     //Error management
+        exit(1);
+
+    if (input_file == NULL) {    //Error management
+        fprintf(output_file, "%s: No such file or directory\n", input_file_name);
+        exit(1);
     }
 
-    if (opterr)
+    if (opterr)                  //Error management
         displayUsage(argv[0], output_file);
 
     long numPathToRoute = maze_read(mazePtr, input_file, output_file);
@@ -259,13 +259,8 @@ int main(int argc, char** argv){
     bool_t status = maze_checkPaths(mazePtr, pathVectorListPtr, output_file);
     assert(status == TRUE);
 
-    int flag = fclose(input_file);
-    if (flag != 0)          //Error management
-        abort();
-
-    flag = fclose(output_file);
-    if (flag != 0)          //Error management
-        abort();
+    if ((fclose(input_file) != 0) || (fclose(output_file) != 0))
+        exit(1);                    //Error management
     
     free(output_file_name);
     maze_free(mazePtr);
