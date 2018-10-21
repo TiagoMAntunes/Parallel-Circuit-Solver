@@ -211,6 +211,20 @@ void grid_addPath (grid_t* gridPtr, vector_t* pointVectorPtr){
     }
 }
 
+/* =============================================================================
+ * grid_undoPath_Ptr 
+ * =============================================================================
+ */
+void grid_undoPath_Ptr (vector_t* pointVectorPtr, int max) {
+    long i;
+    //printf("undoing\n");
+    
+    for (i = 1; i < max; i++) {
+        long* gridPointPtr = (long*)vector_at(pointVectorPtr, i);
+        *gridPointPtr = GRID_POINT_EMPTY; 
+    }
+}
+
 
 /* =============================================================================
  * grid_addPath_Ptr //TODO bool_t
@@ -220,15 +234,27 @@ bool_t grid_addPath_Ptr (grid_t* gridPtr, vector_t* pointVectorPtr){
     long i;
     long n = vector_getSize(pointVectorPtr);
     long x, y, z;
+    bool_t success = TRUE;
 
     for (i = 1; i < (n-1); i++) {
         long* gridPointPtr = (long*)vector_at(pointVectorPtr, i);
         grid_getPointIndices(gridPtr, gridPointPtr, &x, &y, &z);
-        if (grid_isPointFull(gridPtr, x, y, z))
-            return FALSE;
+        if (grid_isPointFull(gridPtr, x, y, z)) {
+            success = FALSE;
+            break;
+        }
 
         *gridPointPtr = GRID_POINT_FULL; 
     }
+
+    // Se ha um obstaculo na posicao i, todos os pontos que ja foram marcados ate
+    // essa posicao têm de ser desmarcados
+    if (!success) {
+        grid_undoPath_Ptr(pointVectorPtr, i);
+        return FALSE;
+
+    }
+
     return TRUE;
 }
 
