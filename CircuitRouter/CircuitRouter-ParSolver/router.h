@@ -54,10 +54,11 @@
 #ifndef ROUTER_H
 #define ROUTER_H 1
 
-
+#include <pthread.h>
 #include "grid.h"
 #include "maze.h"
 #include "lib/vector.h"
+
 
 typedef struct router {
     long xCost;
@@ -71,6 +72,11 @@ typedef struct router_solve_arg {
     maze_t* mazePtr;
     list_t* pathVectorListPtr;
 } router_solve_arg_t;
+
+
+extern pthread_mutex_t queue_lock;
+extern pthread_mutex_t grid_lock;
+extern pthread_mutex_t vector_lock;
 
 
 /* =============================================================================

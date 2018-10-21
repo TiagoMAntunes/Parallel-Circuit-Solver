@@ -83,6 +83,10 @@ enum param_defaults {
 bool_t global_doPrint = TRUE;
 char* global_inputFile = NULL;
 long global_params[256]; /* 256 = ascii limit */
+pthread_t *working_threads = NULL;
+pthread_mutex_t queue_lock;
+pthread_mutex_t grid_lock;
+pthread_mutex_t vector_lock;
 
 
 /* =============================================================================
@@ -96,7 +100,7 @@ static void displayUsage (const char* appName){
     printf("    x <UINT>   [x] movement cost    (%i)\n", PARAM_DEFAULT_XCOST);
     printf("    y <UINT>   [y] movement cost    (%i)\n", PARAM_DEFAULT_YCOST);
     printf("    z <UINT>   [z] movement cost    (%i)\n", PARAM_DEFAULT_ZCOST);
-    printf("	t <INT>    [t]hreads to use 	    \n");
+    printf("    t <INT>    [t]hreads to use     (mandatory)\n");
     printf("    h          [h]elp message       (false)\n");
     exit(1);
 }
@@ -125,7 +129,7 @@ static void parseArgs (long argc, char* const argv[]){
 
     setDefaultParams();
 
-    while ((opt = getopt(argc, argv, "hb:x:y:z:")) != -1) {
+    while ((opt = getopt(argc, argv, "hb:x:y:z:t:")) != -1) {
         switch (opt) {
             case 'b':
             case 'x':
@@ -135,7 +139,9 @@ static void parseArgs (long argc, char* const argv[]){
                 break;
             case '?':
             case 't':
-            	global_params[(unsigned char)opt] = atol(optarg);	//TODO isto esta bem?
+                assert(atol(optarg) > 0);
+            	global_params[(unsigned char)opt] = atol(optarg);	
+                break;
             case 'h':
                 displayUsage(argv[0]);
             default:
@@ -223,17 +229,24 @@ int main(int argc, char** argv){
     router_solve_arg_t routerArg = {routerPtr, mazePtr, pathVectorListPtr};
 
 
+    if (pthread_mutex_init(&queue_lock, NULL) != 0)
+        exit(1);    //error management
+    if (pthread_mutex_init(&grid_lock, NULL) != 0)
+        exit(1);    //error management
+    if (pthread_mutex_init(&vector_lock, NULL) != 0)
+        exit(1);    //error management
+
     long n_threads = global_params[NUMBER_THREADS];
-    pthread_t tid[n_threads];						//<============
-    create_threads(tid, n_threads, &routerArg);	//routerArg sao os recursos que
-    											//as threads têm de usar?
+    working_threads = (pthread_t*) malloc(n_threads * (sizeof(pthread_t)));						//<============
+    create_threads(working_threads, n_threads, &routerArg);	//routerArg sao os recursos que
+    											             //as threads têm de usar?
 
     TIMER_T startTime;
     TIMER_READ(startTime);
 
     //router_solve((void *)&routerArg);		// as threads já executam todas router_solve
     										// logo nao deve ser preciso isto, right?
-  	wait_for_threads(tid, n_threads);		
+  	wait_for_threads(working_threads, n_threads);		
 
     TIMER_T stopTime;
     TIMER_READ(stopTime);

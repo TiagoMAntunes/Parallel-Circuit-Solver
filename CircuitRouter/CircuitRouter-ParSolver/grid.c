@@ -213,17 +213,23 @@ void grid_addPath (grid_t* gridPtr, vector_t* pointVectorPtr){
 
 
 /* =============================================================================
- * grid_addPath_Ptr
+ * grid_addPath_Ptr //TODO bool_t
  * =============================================================================
  */
-void grid_addPath_Ptr (grid_t* gridPtr, vector_t* pointVectorPtr){
+bool_t grid_addPath_Ptr (grid_t* gridPtr, vector_t* pointVectorPtr){
     long i;
     long n = vector_getSize(pointVectorPtr);
+    long x, y, z;
 
     for (i = 1; i < (n-1); i++) {
         long* gridPointPtr = (long*)vector_at(pointVectorPtr, i);
+        grid_getPointIndices(gridPtr, gridPointPtr, &x, &y, &z);
+        if (grid_isPointFull(gridPtr, x, y, z))
+            return FALSE;
+
         *gridPointPtr = GRID_POINT_FULL; 
     }
+    return TRUE;
 }
 
 

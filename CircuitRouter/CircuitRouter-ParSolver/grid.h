@@ -151,10 +151,10 @@ void grid_addPath (grid_t* gridPtr, vector_t* pointVectorPtr);
 
 
 /* =============================================================================
- * grid_addPath_Ptr
+ * grid_addPath_Ptr //TODO bool_t
  * =============================================================================
  */
-void grid_addPath_Ptr (grid_t* gridPtr, vector_t* pointVectorPtr);
+bool_t grid_addPath_Ptr (grid_t* gridPtr, vector_t* pointVectorPtr);
 
 
 /* =============================================================================
