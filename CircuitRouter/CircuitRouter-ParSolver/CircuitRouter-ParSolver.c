@@ -124,6 +124,8 @@ static void setDefaultParams (){
  */
 static void parseArgs (long argc, char* const argv[]){
     long opt;
+    int threads = 0;
+
 
     opterr = 0;
 
@@ -137,11 +139,11 @@ static void parseArgs (long argc, char* const argv[]){
             case 'z':
                 global_params[(unsigned char)opt] = atol(optarg);
                 break;
-            case '?':
             case 't':
-                assert(atol(optarg) > 0);
+                threads = 1;
             	global_params[(unsigned char)opt] = atol(optarg);	
                 break;
+            case '?':
             case 'h':
                 displayUsage(argv[0]);
             default:
@@ -151,6 +153,10 @@ static void parseArgs (long argc, char* const argv[]){
 
     if (optind >= argc) {
         fprintf(stderr, "Missing input file\n");
+        displayUsage(argv[0]);
+    }
+    else if (!threads) {
+        fprintf(stderr, "Missing -t option\n");
         displayUsage(argv[0]);
     }
 
@@ -177,7 +183,7 @@ FILE * outputFile() {
     }
     fp = fopen(result_outputFile, "wt");
     if (fp == NULL) {
-        perror("Error opening output file");
+        perror("Error opening output file\n");
         exit(EXIT_FAILURE);
     }
     return fp;
