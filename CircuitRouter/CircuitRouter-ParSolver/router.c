@@ -335,27 +335,35 @@ void *router_solve (void* argPtr){
         bool_t success = FALSE;
         vector_t* pointVectorPtr = NULL;
         while(!success) {
+            //printf("Reading grid!\n");
             pthread_mutex_lock(&grid_lock);
             grid_copy(myGridPtr, gridPtr); /* create a copy of the grid, over which the expansion and trace back phases will be executed. */
+            pthread_mutex_unlock(&grid_lock);
+            //printf("Done reading!\n");
             
 
             if (doExpansion(routerPtr, myGridPtr, myExpansionQueuePtr,
                             srcPtr, dstPtr)) {
                 pointVectorPtr = doTraceback(gridPtr, myGridPtr, dstPtr, bendCost);
                 if (pointVectorPtr) {
-                    if (!grid_addPath_Ptr(gridPtr, pointVectorPtr)) {
-                        pthread_mutex_unlock(&grid_lock);
-                        continue;
+                    pthread_mutex_lock(&grid_lock);
+                    bool_t valid = grid_addPath_Ptr(gridPtr, pointVectorPtr);
+                    pthread_mutex_unlock(&grid_lock);
+                    if (!valid) {
+                        //printf("nigga wut u doin\n");
+                        continue; //unlucky, try again
                     }
                     success = TRUE;
                 }
-            }
+            } else {
+                //printf("What the fuck\n");
+                break; //no path exists
+            } 
 
             if (success) {
                 bool_t status = vector_pushBack(myPathVectorPtr,(void*)pointVectorPtr);
                 assert(status);
             }
-            pthread_mutex_unlock(&grid_lock);
         }
     }
     /*
