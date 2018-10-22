@@ -334,27 +334,29 @@ void *router_solve (void* argPtr){
 
         bool_t success = FALSE;
         vector_t* pointVectorPtr = NULL;
+        while(!success) {
+            pthread_mutex_lock(&grid_lock);
+            grid_copy(myGridPtr, gridPtr); /* create a copy of the grid, over which the expansion and trace back phases will be executed. */
+            
 
-        pthread_mutex_lock(&grid_lock);
-        grid_copy(myGridPtr, gridPtr); /* create a copy of the grid, over which the expansion and trace back phases will be executed. */
-        
-
-        if (doExpansion(routerPtr, myGridPtr, myExpansionQueuePtr,
-                         srcPtr, dstPtr)) {
-            pointVectorPtr = doTraceback(gridPtr, myGridPtr, dstPtr, bendCost);
-            if (pointVectorPtr) {
-                grid_addPath_Ptr(gridPtr, pointVectorPtr);
-
-                success = TRUE;
+            if (doExpansion(routerPtr, myGridPtr, myExpansionQueuePtr,
+                            srcPtr, dstPtr)) {
+                pointVectorPtr = doTraceback(gridPtr, myGridPtr, dstPtr, bendCost);
+                if (pointVectorPtr) {
+                    if (!grid_addPath_Ptr(gridPtr, pointVectorPtr)) {
+                        pthread_mutex_unlock(&grid_lock);
+                        continue;
+                    }
+                    success = TRUE;
+                }
             }
-        }
 
-        if (success) {
-            bool_t status = vector_pushBack(myPathVectorPtr,(void*)pointVectorPtr);
-            assert(status);
+            if (success) {
+                bool_t status = vector_pushBack(myPathVectorPtr,(void*)pointVectorPtr);
+                assert(status);
+            }
+            pthread_mutex_unlock(&grid_lock);
         }
-        pthread_mutex_unlock(&grid_lock);
-
     }
     /*
      * Add my paths to global list
