@@ -85,6 +85,7 @@ char* global_inputFile = NULL;
 long global_params[256]; /* 256 = ascii limit */
 pthread_t *working_threads = NULL;
 pthread_mutex_t queue_lock;
+pthread_mutex_t *grid_locks;
 pthread_mutex_t grid_lock;
 pthread_mutex_t vector_lock;
 
@@ -210,6 +211,27 @@ void wait_for_threads(pthread_t tid[], long n_threads) {
 		pthread_join(tid[i], NULL);		// hmmm as threads vao devolver alguma coisa?
 }										// ou basta ser NULL, como esta?
 
+
+/* =============================================================================
+ * grid_locks_alloc
+ * Allocates memory to the vector with each grid's position lock.
+ * Initializes each lock;
+ * =============================================================================
+ */
+pthread_mutex_t *grid_locks_alloc(pthread_mutex_t *locks, maze_t *mazePtr) {
+    grid_t* gridPtr = mazePtr->gridPtr;
+    long width  = gridPtr->width;
+    long height = gridPtr->height;
+    long depth  = gridPtr->depth;
+    long i, n = width*height*depth;
+    locks = (pthread_mutex_t*) malloc(n * sizeof(pthread_mutex_t));
+
+    for (i = 0; i < n; i++) 
+        if (pthread_mutex_init(&(locks[i]), NULL) != 0)
+            exit(1);    //error management
+
+    return locks;
+}
 /* =============================================================================
  * main
  * =============================================================================
@@ -237,9 +259,11 @@ int main(int argc, char** argv){
 
     if (pthread_mutex_init(&queue_lock, NULL) != 0)
         exit(1);    //error management
-    if (pthread_mutex_init(&grid_lock, NULL) != 0)
-        exit(1);    //error management
-    if (pthread_mutex_init(&vector_lock, NULL) != 0)
+//    grid_locks = grid_locks_alloc(grid_locks, mazePtr);
+
+    if (pthread_mutex_init(&grid_lock, NULL) != 0)      //isto pode manter-se para bloquear a copia
+        exit(1);    //error management                  // é importante é que nao escrevam doi sno mesmo sitio
+    if (pthread_mutex_init(&vector_lock, NULL) != 0)    //a leitura é feita antes / depois da escrita, nunca durante
         exit(1);    //error management
 
     long n_threads = global_params[NUMBER_THREADS];
