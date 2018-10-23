@@ -289,6 +289,67 @@ static vector_t* doTraceback (grid_t* gridPtr, grid_t* myGridPtr, coordinate_t* 
     return pointVectorPtr;
 }
 
+/* =============================================================================
+ * releases_locks
+ * receives the sorted pointVectorPtr
+ * unlocks all the locks previously locked
+ * =============================================================================
+ */
+void release_locks(grid_t *gridPtr, vector_t *pointVectorPtr, pthread_mutex_t *grid_locks, int maxI) {
+    long x, y, z;
+    long maxX = gridPtr->width;
+    long maxY = gridPtr->height;
+
+    for(int i = 0; i < maxI; i++){
+        grid_getPointIndices(gridPtr, (long *)((pointVectorPtr->elements)[i]), &x, &y, &z);
+        pthread_mutex_unlock(&(grid_locks[z*maxX*maxY + y*maxX + x]));
+    }
+}
+
+/* =============================================================================
+ * try_locks
+ * tries to lock all the grid locks it needs, if not successful unlocks all
+ * the locks it got till that moment
+ * =============================================================================
+ */
+void try_locks(grid_t* gridPtr, vector_t *pointVectorPtr, pthread_mutex_t *grid_locks) {
+    // 1. Ordenar as locks
+    // 2. Fazer try_lock a cada um delas
+    // 3. Se nao conseguir alguma lock liberta as que ja adquiriu
+    // 4. Espera C * tentativas (quanto deve ser C?) 
+
+    // NOTAS:
+    // - pointVectorPtr tem as referencias dos pontos correspondentes na grelha
+    // - basta ordenar as referencias
+    // - para saber que lock corresponde a um ponto usa-se grid_getPointIndices
+    long x, y, z;
+    long maxX = gridPtr->width;
+    long maxY = gridPtr->height;
+    int tries = 0;
+    int i, success = 0;
+    long size = vector_getSize(pointVectorPtr);
+    //float C = valor razoavel;
+                                //TODO definir esta funcao compare (para longs)
+    vector_sort (pointVectorPtr,  &compare);
+    while(!success) {
+       
+        for(i = 0; i < size; i++){
+            grid_getPointIndices(gridPtr, (long *)((pointVectorPtr->elements)[i]), &x, &y, &z);
+            if (pthread_mutex_trylock(&(grid_locks[z*maxX*maxY + y*maxX + x]))) {//cant get lock
+                // é para libertar todas até aqui, ou o fazemos wait so por esta?
+                //se for todas, então:
+                release_locks(gridPtr, pointVectorPtr, grid_locks, i);
+            }
+        }
+        if (i == size) 
+            success = 1;
+        else {
+            tries++;
+           //wait(C*tries); 
+        }
+    }
+
+}
 
 /* =============================================================================
  * router_solve
@@ -335,30 +396,25 @@ void *router_solve (void* argPtr){
         bool_t success = FALSE;
         vector_t* pointVectorPtr = NULL;
         while(!success) {
-            //printf("Reading grid!\n");
             pthread_mutex_lock(&grid_lock);
             grid_copy(myGridPtr, gridPtr); /* create a copy of the grid, over which the expansion and trace back phases will be executed. */
-            pthread_mutex_unlock(&grid_lock);
-            //printf("Done reading!\n");
-            
+            pthread_mutex_unlock(&grid_lock);            
 
             if (doExpansion(routerPtr, myGridPtr, myExpansionQueuePtr,
                             srcPtr, dstPtr)) {
                 pointVectorPtr = doTraceback(gridPtr, myGridPtr, dstPtr, bendCost);
                 if (pointVectorPtr) {
+                    try_locks(gridPtr, pointVectorPtr, grid_locks); //TODO 
                     pthread_mutex_lock(&grid_lock);
                     bool_t valid = grid_addPath_Ptr(gridPtr, pointVectorPtr);
                     pthread_mutex_unlock(&grid_lock);
                     if (!valid) {
-                        //printf("nigga wut u doin\n");
                         continue; //unlucky, try again
                     }
                     success = TRUE;
                 }
-            } else {
-                //printf("What the fuck\n");
+            } else 
                 break; //no path exists
-            } 
 
             if (success) {
                 bool_t status = vector_pushBack(myPathVectorPtr,(void*)pointVectorPtr);
@@ -372,7 +428,7 @@ void *router_solve (void* argPtr){
     list_t* pathVectorListPtr = routerArgPtr->pathVectorListPtr;
 
     pthread_mutex_lock(&vector_lock);
-    list_insert(pathVectorListPtr, (void*)myPathVectorPtr);             /* TODO */
+    list_insert(pathVectorListPtr, (void*)myPathVectorPtr);             
     pthread_mutex_unlock(&vector_lock);
 
     grid_free(myGridPtr);

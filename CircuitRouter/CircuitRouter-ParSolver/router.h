@@ -77,7 +77,7 @@ typedef struct router_solve_arg {
 extern pthread_mutex_t queue_lock;
 extern pthread_mutex_t grid_lock;
 extern pthread_mutex_t vector_lock;
-
+extern pthread_mutex_t *grid_locks;
 
 /* =============================================================================
  * router_alloc

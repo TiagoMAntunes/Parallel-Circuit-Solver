@@ -85,9 +85,9 @@ char* global_inputFile = NULL;
 long global_params[256]; /* 256 = ascii limit */
 pthread_t *working_threads = NULL;
 pthread_mutex_t queue_lock;
-pthread_mutex_t *grid_locks;
 pthread_mutex_t grid_lock;
 pthread_mutex_t vector_lock;
+pthread_mutex_t *grid_locks;
 
 
 /* =============================================================================
@@ -232,6 +232,7 @@ pthread_mutex_t *grid_locks_alloc(pthread_mutex_t *locks, maze_t *mazePtr) {
 
     return locks;
 }
+
 /* =============================================================================
  * main
  * =============================================================================
@@ -277,6 +278,8 @@ int main(int argc, char** argv){
     //router_solve((void *)&routerArg);		// as threads já executam todas router_solve
     										// logo nao deve ser preciso isto, right?
   	wait_for_threads(working_threads, n_threads);		
+
+    //pthread_destroy
 
     TIMER_T stopTime;
     TIMER_READ(stopTime);
