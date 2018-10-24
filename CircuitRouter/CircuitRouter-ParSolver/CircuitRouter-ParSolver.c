@@ -85,7 +85,6 @@ char* global_inputFile = NULL;
 long global_params[256]; /* 256 = ascii limit */
 pthread_t *working_threads = NULL;
 pthread_mutex_t queue_lock;
-pthread_mutex_t grid_lock;
 pthread_mutex_t vector_lock;
 pthread_mutex_t *grid_locks;
 
@@ -194,6 +193,9 @@ FILE * outputFile() {
 
 /* =============================================================================
  * crate_threads
+ * Input: Vector of thread id's
+ *        tid[] Size
+ *        Arguments of the function the threads are going to execute
  * =============================================================================
  */
 void create_threads(pthread_t tid[], long n_threads, router_solve_arg_t *routerArg) {
@@ -204,13 +206,14 @@ void create_threads(pthread_t tid[], long n_threads, router_solve_arg_t *routerA
 
 /* =============================================================================
  * wait_for_threads
+ * Input: Vector of thread id's
+ *        tid[] Size
  * =============================================================================
  */
 void wait_for_threads(pthread_t tid[], long n_threads) {
 	for (int i = 0; i < n_threads; i++)
-		pthread_join(tid[i], NULL);		// hmmm as threads vao devolver alguma coisa?
-}										// ou basta ser NULL, como esta?
-
+		pthread_join(tid[i], NULL);		
+}										
 
 /* =============================================================================
  * grid_locks_alloc
@@ -260,26 +263,21 @@ int main(int argc, char** argv){
 
     if (pthread_mutex_init(&queue_lock, NULL) != 0)
         exit(1);    //error management
-    grid_locks = grid_locks_alloc(grid_locks, mazePtr);
 
-    if (pthread_mutex_init(&grid_lock, NULL) != 0)      //isto pode manter-se para bloquear a copia
-        exit(1);    //error management                  // é importante é que nao escrevam doi sno mesmo sitio
-    if (pthread_mutex_init(&vector_lock, NULL) != 0)    //a leitura é feita antes / depois da escrita, nunca durante
+    grid_locks = grid_locks_alloc(grid_locks, mazePtr);
+    
+    if (pthread_mutex_init(&vector_lock, NULL) != 0)    
         exit(1);    //error management
 
     long n_threads = global_params[NUMBER_THREADS];
     working_threads = (pthread_t*) malloc(n_threads * (sizeof(pthread_t)));						//<============
-    create_threads(working_threads, n_threads, &routerArg);	//routerArg sao os recursos que
-    											             //as threads têm de usar?
+    create_threads(working_threads, n_threads, &routerArg);	
+    											             
 
     TIMER_T startTime;
     TIMER_READ(startTime);
 
-    //router_solve((void *)&routerArg);		// as threads já executam todas router_solve
-    										// logo nao deve ser preciso isto, right?
   	wait_for_threads(working_threads, n_threads);		
-
-    //pthread_destroy
 
     TIMER_T stopTime;
     TIMER_READ(stopTime);

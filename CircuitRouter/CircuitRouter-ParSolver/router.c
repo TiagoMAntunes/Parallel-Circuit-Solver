@@ -222,7 +222,6 @@ static void traceToNeighbor (grid_t* myGridPtr, point_t* currPtr, point_t* moveP
 
 /* =============================================================================
  * doTraceback
- * return the vector with the reference of each path's point
  * =============================================================================
  */
 static vector_t* doTraceback (grid_t* gridPtr, grid_t* myGridPtr, coordinate_t* dstPtr, long bendCost){
@@ -290,9 +289,13 @@ static vector_t* doTraceback (grid_t* gridPtr, grid_t* myGridPtr, coordinate_t* 
 }
 
 /* =============================================================================
- * releases_locks
- * receives the sorted pointVectorPtr
- * unlocks all the locks previously locked
+ * release_locks
+ * Input: Pointer to grid
+ *        Vector of points
+ *        Vector with the grid's locks
+ *        Number of locks to unlock
+ * 
+ * Unlocks all the locks previously locked
  * =============================================================================
  */
 void release_locks(grid_t *gridPtr, vector_t *pointVectorPtr, pthread_mutex_t *grid_locks, int maxI) {
@@ -319,36 +322,30 @@ int compare(const void * el1, const void * el2) {
 
 /* =============================================================================
  * try_locks
- * tries to lock all the grid locks it needs, if not successful unlocks all
- * the locks it got till that moment
+ * Input: Pointer to global grid
+ *        Pointer to a vector of points
+ *        Vector with the grid's locks
+ *
+ * Current thread tries to lock all the grid locks it needs, if not successful, 
+ * it unlocks all the locks it got untill that moment
  * =============================================================================
  */
 void try_locks(grid_t* gridPtr, vector_t *pointVectorPtr, pthread_mutex_t *grid_locks) {
-    // 1. Ordenar as locks
-    // 2. Fazer try_lock a cada um delas
-    // 3. Se nao conseguir alguma lock liberta as que ja adquiriu
-    // 4. Espera C * tentativas (quanto deve ser C?) 
-
-    // NOTAS:
-    // - pointVectorPtr tem as referencias dos pontos correspondentes na grelha
-    // - basta ordenar as referencias
-    // - para saber que lock corresponde a um ponto usa-se grid_getPointIndices
+   
     long x, y, z;
     long maxX = gridPtr->width;
     long maxY = gridPtr->height;
     int tries = 0;
     int i, success = 0;
-    long size = vector_getSize(pointVectorPtr);
+    long size = vector_getSize(pointVectorPtr); // To avoid deadlock
     //float C = valor razoavel;
-                                //TODO definir esta funcao compare (para longs)
+                                
     vector_sort (pointVectorPtr,  &compare);
     while(!success) {
        
         for(i = 0; i < size; i++){
             grid_getPointIndices(gridPtr, (long *)((pointVectorPtr->elements)[i]), &x, &y, &z);
-            if (pthread_mutex_trylock(&(grid_locks[z*maxX*maxY + y*maxX + x]))) {//cant get lock
-                // é para libertar todas até aqui, ou o fazemos wait so por esta?
-                //se for todas, então:
+            if (pthread_mutex_trylock(&(grid_locks[z*maxX*maxY + y*maxX + x]))) {
                 release_locks(gridPtr, pointVectorPtr, grid_locks, i);
             }
         }
@@ -356,7 +353,7 @@ void try_locks(grid_t* gridPtr, vector_t *pointVectorPtr, pthread_mutex_t *grid_
             success = 1;
         else {
             tries++;
-           //wait(C*tries); 
+           //wait(C*tries);    // To avoid starvation?
         }
     }
 
@@ -407,10 +404,8 @@ void *router_solve (void* argPtr){
         bool_t success = FALSE;
         vector_t* pointVectorPtr = NULL;
         while(!success) {
-            //pthread_mutex_lock(&grid_lock);
-            grid_copy(myGridPtr, gridPtr); /* create a copy of the grid, over which the expansion and trace back phases will be executed. */
-            //pthread_mutex_unlock(&grid_lock);            
-
+            
+            grid_copy(myGridPtr, gridPtr); /* create a copy of the grid, over which the expansion and trace back phases will be executed. */           
             if (doExpansion(routerPtr, myGridPtr, myExpansionQueuePtr,
                             srcPtr, dstPtr)) {
                 pointVectorPtr = doTraceback(gridPtr, myGridPtr, dstPtr, bendCost);
