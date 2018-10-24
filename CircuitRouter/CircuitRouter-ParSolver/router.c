@@ -306,6 +306,17 @@ void release_locks(grid_t *gridPtr, vector_t *pointVectorPtr, pthread_mutex_t *g
     }
 }
 
+
+/* =============================================================================
+ * compare
+ * returns the result of subtraction of el1 pointer by el2 pointer
+ * =============================================================================
+ */
+int compare(const void * el1, const void * el2) {
+    return el1 - el2;
+}
+
+
 /* =============================================================================
  * try_locks
  * tries to lock all the grid locks it needs, if not successful unlocks all
@@ -404,10 +415,9 @@ void *router_solve (void* argPtr){
                             srcPtr, dstPtr)) {
                 pointVectorPtr = doTraceback(gridPtr, myGridPtr, dstPtr, bendCost);
                 if (pointVectorPtr) {
-                    try_locks(gridPtr, pointVectorPtr, grid_locks); //TODO 
-                    pthread_mutex_lock(&grid_lock);
+                    try_locks(gridPtr, pointVectorPtr, grid_locks);
                     bool_t valid = grid_addPath_Ptr(gridPtr, pointVectorPtr);
-                    pthread_mutex_unlock(&grid_lock);
+                    release_locks(gridPtr, pointVectorPtr, grid_locks, vector_getSize(pointVectorPtr));
                     if (!valid) {
                         continue; //unlucky, try again
                     }

@@ -260,7 +260,7 @@ int main(int argc, char** argv){
 
     if (pthread_mutex_init(&queue_lock, NULL) != 0)
         exit(1);    //error management
-//    grid_locks = grid_locks_alloc(grid_locks, mazePtr);
+    grid_locks = grid_locks_alloc(grid_locks, mazePtr);
 
     if (pthread_mutex_init(&grid_lock, NULL) != 0)      //isto pode manter-se para bloquear a copia
         exit(1);    //error management                  // é importante é que nao escrevam doi sno mesmo sitio
