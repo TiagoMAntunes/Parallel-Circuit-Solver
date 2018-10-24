@@ -407,9 +407,9 @@ void *router_solve (void* argPtr){
         bool_t success = FALSE;
         vector_t* pointVectorPtr = NULL;
         while(!success) {
-            pthread_mutex_lock(&grid_lock);
+            //pthread_mutex_lock(&grid_lock);
             grid_copy(myGridPtr, gridPtr); /* create a copy of the grid, over which the expansion and trace back phases will be executed. */
-            pthread_mutex_unlock(&grid_lock);            
+            //pthread_mutex_unlock(&grid_lock);            
 
             if (doExpansion(routerPtr, myGridPtr, myExpansionQueuePtr,
                             srcPtr, dstPtr)) {
