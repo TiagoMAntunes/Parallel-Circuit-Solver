@@ -23,3 +23,9 @@ do
     TIME=$(cat ${FILENAME}.res | grep -P "time" | grep -o -P "\d+.\d+")
     echo $i,${TIME},$(echo "scale=6; ${SEQTIME}/${TIME}" | bc) >> $OUTFILE
 done
+
+if [ ! -d results ]; then
+	mkdir results
+fi
+
+mv $FILENAME.speedups.csv results/

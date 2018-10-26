@@ -267,7 +267,7 @@ long maze_read (maze_t* mazePtr, char * input, FILE * fp){
         queue_push(workQueuePtr, (void*)coordinatePairPtr);
     }
     list_free(workListPtr);
-    
+    fclose(inputFile);
     return vector_getSize(srcVectorPtr);
 }
 

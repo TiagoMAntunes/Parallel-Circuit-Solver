@@ -282,6 +282,8 @@ int main(int argc, char** argv){
     TIMER_T stopTime;
     TIMER_READ(stopTime);
 
+    free(working_threads);
+    free(grid_locks);
     long numPathRouted = 0;
     list_iter_t it;
     list_iter_reset(&it, pathVectorListPtr);

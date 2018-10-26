@@ -347,6 +347,7 @@ void try_locks(grid_t* gridPtr, vector_t *pointVectorPtr, pthread_mutex_t *grid_
             grid_getPointIndices(gridPtr, (long *)((pointVectorPtr->elements)[i]), &x, &y, &z);
             if (pthread_mutex_trylock(&(grid_locks[z*maxX*maxY + y*maxX + x]))) {
                 release_locks(gridPtr, pointVectorPtr, grid_locks, i);
+                break;
             }
         }
         if (i == size) 
@@ -414,6 +415,7 @@ void *router_solve (void* argPtr){
                     bool_t valid = grid_addPath_Ptr(gridPtr, pointVectorPtr);
                     release_locks(gridPtr, pointVectorPtr, grid_locks, vector_getSize(pointVectorPtr));
                     if (!valid) {
+                        vector_free(pointVectorPtr);
                         continue; //unlucky, try again
                     }
                     success = TRUE;
