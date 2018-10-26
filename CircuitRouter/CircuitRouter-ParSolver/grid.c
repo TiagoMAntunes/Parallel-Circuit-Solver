@@ -234,27 +234,21 @@ bool_t grid_addPath_Ptr (grid_t* gridPtr, vector_t* pointVectorPtr){
     long i;
     long n = vector_getSize(pointVectorPtr);
     long x, y, z;
-    bool_t success = TRUE;
+    long* gridPointPtr;
 
     for (i = 1; i < (n-1); i++) {
-        long* gridPointPtr = (long*)vector_at(pointVectorPtr, i);
+        gridPointPtr = (long*)vector_at(pointVectorPtr, i);
         grid_getPointIndices(gridPtr, gridPointPtr, &x, &y, &z);
-        if (grid_isPointFull(gridPtr, x, y, z)) {
-            success = FALSE;
-            break;
-        }
+        if (grid_isPointFull(gridPtr, x, y, z)) 
+            return FALSE;
+                    *gridPointPtr = GRID_POINT_FULL; 
+    }
 
+    for (i = 1; i < (n-1); i++) {
+        gridPointPtr = (long*)vector_at(pointVectorPtr, i);
         *gridPointPtr = GRID_POINT_FULL; 
     }
-
-    // Se ha um obstaculo na posicao i, todos os pontos que ja foram marcados ate
-    // essa posicao têm de ser desmarcados
-    if (!success) {
-        grid_undoPath_Ptr(pointVectorPtr, i);
-        return FALSE;
-
-    }
-
+   
     return TRUE;
 }
 
