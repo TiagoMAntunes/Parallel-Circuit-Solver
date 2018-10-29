@@ -339,8 +339,7 @@ void try_locks(grid_t* gridPtr, vector_t *pointVectorPtr, pthread_mutex_t *grid_
     int i, success = 0;
     long size = vector_getSize(pointVectorPtr); // To avoid deadlock
     //float C = valor razoavel;
-                                
-    vector_sort (pointVectorPtr,  &compare);
+    vector_sort_range(pointVectorPtr,  &compare, 1, size-1);
     while(!success) {
        
         for(i = 0; i < size; i++){

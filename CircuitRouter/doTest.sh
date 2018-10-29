@@ -11,7 +11,12 @@ if [ -z $FILENAME ]; then
     exit 0
 fi
 
-$($SEQ $FILENAME)
+if [ ! -f $SEQ ] || [ ! -f $PAR ]; then
+	echo "Please run make command first"
+	exit 0
+fi
+
+$SEQ $FILENAME
 SEQTIME=$(cat ${FILENAME}.res | grep -P "time" | grep -o -P "\d+.\d+")
 
 echo \#threads,exec_time,speedup > $OUTFILE
