@@ -24,7 +24,7 @@ echo 1S,${SEQTIME},$(echo ${SEQTIME}/${SEQTIME} | bc) >> $OUTFILE
 
 for i in $(seq 1 ${THREADS});
 do
-    $(${PAR} -t $i ${FILENAME})
+    ${PAR} -t $i ${FILENAME}
     TIME=$(cat ${FILENAME}.res | grep -P "time" | grep -o -P "\d+.\d+")
     echo $i,${TIME},$(echo "scale=6; ${SEQTIME}/${TIME}" | bc) >> $OUTFILE
 done

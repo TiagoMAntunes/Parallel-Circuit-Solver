@@ -59,6 +59,7 @@
 #include "lib/queue.h"
 #include "router.h"
 #include "lib/vector.h"
+#include "../lib/timer.h"
 
 
 typedef enum momentum {
@@ -319,6 +320,19 @@ int compare(const void * el1, const void * el2) {
     return el1 - el2;
 }
 
+/* =============================================================================
+ * exponential
+ * returns the result of the 2 to the power of t
+ * =============================================================================
+ */
+
+unsigned long exponential(int t) {
+    unsigned long res = 1;
+    for (int i = 1; i <= t; i++)
+        res *= 2;
+    return res;
+}
+
 
 /* =============================================================================
  * try_locks
@@ -330,7 +344,7 @@ int compare(const void * el1, const void * el2) {
  * it unlocks all the locks it got untill that moment
  * =============================================================================
  */
-void try_locks(grid_t* gridPtr, vector_t *pointVectorPtr, pthread_mutex_t *grid_locks) {
+bool_t try_locks(grid_t* gridPtr, vector_t *pointVectorPtr, pthread_mutex_t *grid_locks) {
    
     long x, y, z;
     long maxX = gridPtr->width;
@@ -339,23 +353,32 @@ void try_locks(grid_t* gridPtr, vector_t *pointVectorPtr, pthread_mutex_t *grid_
     int i, success = 0;
     long size = vector_getSize(pointVectorPtr); // To avoid deadlock
     //float C = valor razoavel;
-    vector_sort_range(pointVectorPtr,  &compare, 1, size-1);
+    //vector_sort_range(pointVectorPtr,  &compare, 1, size-1);
     while(!success) {
        
-        for(i = 0; i < size; i++){
+        for(i = 1; i < size-1; i++){
             grid_getPointIndices(gridPtr, (long *)((pointVectorPtr->elements)[i]), &x, &y, &z);
             if (pthread_mutex_trylock(&(grid_locks[z*maxX*maxY + y*maxX + x]))) {
                 release_locks(gridPtr, pointVectorPtr, grid_locks, i);
                 break;
+            } else if (grid_isPointFull(gridPtr, x, y, z)) {
+                release_locks(gridPtr, pointVectorPtr, grid_locks, i+1);
+                return FALSE;
             }
+            grid_setPoint(gridPtr, x,y,z, GRID_POINT_FULL);
         }
-        if (i == size) 
+        if (i == size-1) 
             success = 1;
         else {
-            tries++;
-           //wait(C*tries);    // To avoid starvation?
+            struct timespec ts_sleep = { (time_t) (exponential(tries) / 1000000000), exponential(tries++)};
+            nanosleep(&ts_sleep, NULL);
         }
     }
+    if(tries != 0)
+        printf("Tries: %d\n", tries);
+
+    release_locks(gridPtr, pointVectorPtr, grid_locks, i);
+    return TRUE;
 
 }
 
@@ -410,9 +433,9 @@ void *router_solve (void* argPtr){
                             srcPtr, dstPtr)) {
                 pointVectorPtr = doTraceback(gridPtr, myGridPtr, dstPtr, bendCost);
                 if (pointVectorPtr) {
-                    try_locks(gridPtr, pointVectorPtr, grid_locks);
-                    bool_t valid = grid_addPath_Ptr(gridPtr, pointVectorPtr);
-                    release_locks(gridPtr, pointVectorPtr, grid_locks, vector_getSize(pointVectorPtr));
+                    bool_t valid = try_locks(gridPtr, pointVectorPtr, grid_locks);
+                    //bool_t valid = grid_addPath_Ptr(gridPtr, pointVectorPtr);
+                    //release_locks(gridPtr, pointVectorPtr, grid_locks, vector_getSize(pointVectorPtr));
                     if (!valid) {
                         vector_free(pointVectorPtr);
                         continue; //unlucky, try again
