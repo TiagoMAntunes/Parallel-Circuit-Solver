@@ -352,8 +352,7 @@ bool_t try_locks(grid_t* gridPtr, vector_t *pointVectorPtr, pthread_mutex_t *gri
     int tries = 0;
     int i, success = 0;
     long size = vector_getSize(pointVectorPtr); // To avoid deadlock
-    //float C = valor razoavel;
-    //vector_sort_range(pointVectorPtr,  &compare, 1, size-1);
+
     while(!success) {
        
         for(i = 1; i < size-1; i++){
@@ -374,7 +373,7 @@ bool_t try_locks(grid_t* gridPtr, vector_t *pointVectorPtr, pthread_mutex_t *gri
             nanosleep(&ts_sleep, NULL);
         }
     }
-    if(tries != 0)
+    if(tries != 0)					// debug
         printf("Tries: %d\n", tries);
 
     release_locks(gridPtr, pointVectorPtr, grid_locks, i);
@@ -411,9 +410,13 @@ void *router_solve (void* argPtr){
         if (queue_isEmpty(workQueuePtr)) {
             coordinatePairPtr = NULL;
         } else {
-            pthread_mutex_lock(&queue_lock);
-            coordinatePairPtr = (pair_t*)queue_pop(workQueuePtr);
-            pthread_mutex_unlock(&queue_lock);
+            if (pthread_mutex_lock(&queue_lock) == 0) {
+            	coordinatePairPtr = (pair_t*)queue_pop(workQueuePtr);
+            	if (pthread_mutex_unlock(&queue_lock) != 0)
+            		exit(1);
+            }
+            else 
+            	exit(1);
         }
         if (coordinatePairPtr == NULL) {
             break;
@@ -434,8 +437,6 @@ void *router_solve (void* argPtr){
                 pointVectorPtr = doTraceback(gridPtr, myGridPtr, dstPtr, bendCost);
                 if (pointVectorPtr) {
                     bool_t valid = try_locks(gridPtr, pointVectorPtr, grid_locks);
-                    //bool_t valid = grid_addPath_Ptr(gridPtr, pointVectorPtr);
-                    //release_locks(gridPtr, pointVectorPtr, grid_locks, vector_getSize(pointVectorPtr));
                     if (!valid) {
                         vector_free(pointVectorPtr);
                         continue; //unlucky, try again
@@ -456,9 +457,13 @@ void *router_solve (void* argPtr){
      */
     list_t* pathVectorListPtr = routerArgPtr->pathVectorListPtr;
 
-    pthread_mutex_lock(&vector_lock);
-    list_insert(pathVectorListPtr, (void*)myPathVectorPtr);             
-    pthread_mutex_unlock(&vector_lock);
+    if (pthread_mutex_lock(&vector_lock) == 0) {
+    	list_insert(pathVectorListPtr, (void*)myPathVectorPtr); 
+    	if (pthread_mutex_unlock(&vector_lock) != 0)
+    	exit(1);            
+    }
+   	else 
+   		exit(1);
 
     grid_free(myGridPtr);
     queue_free(myExpansionQueuePtr);

@@ -212,8 +212,10 @@ void create_threads(pthread_t tid[], long n_threads, router_solve_arg_t *routerA
  */
 void wait_for_threads(pthread_t tid[], long n_threads) {
 	for (int i = 0; i < n_threads; i++)
-		pthread_join(tid[i], NULL);		
-}										
+		if (pthread_join(tid[i], NULL) != 0)
+            exit(1);    //error management		
+}
+								
 
 /* =============================================================================
  * grid_locks_alloc
@@ -234,6 +236,16 @@ pthread_mutex_t *grid_locks_alloc(pthread_mutex_t *locks, maze_t *mazePtr) {
             exit(1);    //error management
 
     return locks;
+}
+
+void destroy_mutexes(pthread_mutex_t queue_lock, pthread_mutex_t vector_lock, pthread_mutex_t *grid_locks, maze_t* mazePtr) {
+    if (pthread_mutex_destroy(&queue_lock) != 0 || pthread_mutex_destroy(&vector_lock) != 0)
+        exit(1);
+
+    long n_grid_locks = mazePtr->gridPtr->width * mazePtr->gridPtr->depth * mazePtr->gridPtr->height;
+    for (long i = 0; i < n_grid_locks; i++)
+        if(pthread_mutex_destroy(&(grid_locks[i])) != 0)
+            exit(1);
 }
 
 /* =============================================================================
@@ -277,7 +289,8 @@ int main(int argc, char** argv){
     TIMER_T startTime;
     TIMER_READ(startTime);
 
-  	wait_for_threads(working_threads, n_threads);		
+  	wait_for_threads(working_threads, n_threads);
+    destroy_mutexes(queue_lock, vector_lock, grid_locks, mazePtr);		
 
     TIMER_T stopTime;
     TIMER_READ(stopTime);
