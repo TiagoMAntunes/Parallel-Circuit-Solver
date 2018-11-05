@@ -294,6 +294,7 @@ int main(int argc, char** argv){
 
     TIMER_T stopTime;
     TIMER_READ(stopTime);
+    
 
     free(working_threads);
     free(grid_locks);

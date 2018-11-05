@@ -304,7 +304,7 @@ void release_locks(grid_t *gridPtr, vector_t *pointVectorPtr, pthread_mutex_t *g
     long maxX = gridPtr->width;
     long maxY = gridPtr->height;
 
-    for(int i = 0; i < maxI; i++){
+    for(int i = 1; i < maxI; i++){
         grid_getPointIndices(gridPtr, (long *)((pointVectorPtr->elements)[i]), &x, &y, &z);
         pthread_mutex_unlock(&(grid_locks[z*maxX*maxY + y*maxX + x]));
     }
