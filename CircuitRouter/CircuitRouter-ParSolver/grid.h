@@ -163,6 +163,11 @@ bool_t grid_addPath_Ptr (grid_t* gridPtr, vector_t* pointVectorPtr);
  */
 void grid_print (grid_t* gridPtr, FILE *fp);
 
+/* =============================================================================
+ * grid_undoPath_Ptr 
+ * =============================================================================
+ */
+void grid_undoPath_Ptr (vector_t* pointVectorPtr, int max);
 
 #endif /* GRID_H */
 

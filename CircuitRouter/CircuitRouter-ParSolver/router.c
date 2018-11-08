@@ -351,30 +351,35 @@ bool_t try_locks(grid_t* gridPtr, vector_t *pointVectorPtr, pthread_mutex_t *gri
     long maxY = gridPtr->height;
     int tries = 0;
     int i, success = 0;
-    long size = vector_getSize(pointVectorPtr); // To avoid deadlock
+    long size = vector_getSize(pointVectorPtr);
 
     while(!success) {
        
         for(i = 1; i < size-1; i++){
             grid_getPointIndices(gridPtr, (long *)((pointVectorPtr->elements)[i]), &x, &y, &z);
             if (pthread_mutex_trylock(&(grid_locks[z*maxX*maxY + y*maxX + x]))) {
+                //can't lock, go back
                 release_locks(gridPtr, pointVectorPtr, grid_locks, i);
+                grid_undoPath_Ptr(pointVectorPtr, i);
                 break;
             } else if (grid_isPointFull(gridPtr, x, y, z)) {
+                //invalid position -> invalid path 
                 release_locks(gridPtr, pointVectorPtr, grid_locks, i+1);
+                grid_undoPath_Ptr(pointVectorPtr, i);
                 return FALSE;
             }
+            //all good, fill point
             grid_setPoint(gridPtr, x,y,z, GRID_POINT_FULL);
         }
         if (i == size-1) 
             success = 1;
         else {
-            struct timespec ts_sleep = { (time_t) (exponential(tries) / 1000000000), exponential(tries++)};
+            //sleeps for v nanoseconds
+            long v = exponential(tries++);
+            struct timespec ts_sleep = { (time_t) (v / 1000000000), v}; 
             nanosleep(&ts_sleep, NULL);
         }
     }
-    if(tries != 0)					// debug
-        printf("Tries: %d\n", tries);
 
     release_locks(gridPtr, pointVectorPtr, grid_locks, i);
     return TRUE;
