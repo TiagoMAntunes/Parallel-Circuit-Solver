@@ -141,6 +141,11 @@ static void parseArgs (long argc, char* const argv[]){
                 break;
             case 't':
                 threads = 1;
+                if (atol(optarg) < 1) {
+                    fprintf(stderr, "Number of threads should be higher than 0.\n");
+                    exit(-1);
+                }
+
             	global_params[(unsigned char)opt] = atol(optarg);	
                 break;
             case '?':
@@ -200,8 +205,10 @@ FILE * outputFile() {
  */
 void create_threads(pthread_t tid[], long n_threads, router_solve_arg_t *routerArg) {
 	for (int i = 0; i < n_threads; i++)
-		if (pthread_create(&tid[i], 0, router_solve, (void *) routerArg) != 0)
+		if (pthread_create(&tid[i], 0, router_solve, (void *) routerArg) != 0) {
+            fprintf(stderr, "Error creating thread.\n");
 			exit(1);		//error management
+        }
 }
 
 /* =============================================================================
@@ -212,8 +219,10 @@ void create_threads(pthread_t tid[], long n_threads, router_solve_arg_t *routerA
  */
 void wait_for_threads(pthread_t tid[], long n_threads) {
 	for (int i = 0; i < n_threads; i++)
-		if (pthread_join(tid[i], NULL) != 0)
+		if (pthread_join(tid[i], NULL) != 0) {
+            fprintf(stderr, "Error waiting for thread.\n");
             exit(1);    //error management		
+        }
 }
 								
 
@@ -232,20 +241,26 @@ pthread_mutex_t *grid_locks_alloc(pthread_mutex_t *locks, maze_t *mazePtr) {
     locks = (pthread_mutex_t*) malloc(n * sizeof(pthread_mutex_t));
 
     for (i = 0; i < n; i++) 
-        if (pthread_mutex_init(&(locks[i]), NULL) != 0)
+        if (pthread_mutex_init(&(locks[i]), NULL) != 0) {
+            fprintf(stderr, "Error initializing mutex.\n");
             exit(1);    //error management
+        }
 
     return locks;
 }
 
 void destroy_mutexes(pthread_mutex_t queue_lock, pthread_mutex_t vector_lock, pthread_mutex_t *grid_locks, maze_t* mazePtr) {
-    if (pthread_mutex_destroy(&queue_lock) != 0 || pthread_mutex_destroy(&vector_lock) != 0)
+    if (pthread_mutex_destroy(&queue_lock) != 0 || pthread_mutex_destroy(&vector_lock) != 0) {
+        fprintf(stderr, "Error destroying mutex.\n");
         exit(1);
+    }
 
     long n_grid_locks = mazePtr->gridPtr->width * mazePtr->gridPtr->depth * mazePtr->gridPtr->height;
     for (long i = 0; i < n_grid_locks; i++)
-        if(pthread_mutex_destroy(&(grid_locks[i])) != 0)
+        if(pthread_mutex_destroy(&(grid_locks[i])) != 0) {
+            fprintf(stderr, "Error destroying mutex.\n");
             exit(1);
+        }
 }
 
 /* =============================================================================
@@ -273,13 +288,17 @@ int main(int argc, char** argv){
     router_solve_arg_t routerArg = {routerPtr, mazePtr, pathVectorListPtr};
 
 
-    if (pthread_mutex_init(&queue_lock, NULL) != 0)
+    if (pthread_mutex_init(&queue_lock, NULL) != 0) {
+        fprintf(stderr, "Error initializing mutex.\n");
         exit(1);    //error management
+    }
 
     grid_locks = grid_locks_alloc(grid_locks, mazePtr);
     
-    if (pthread_mutex_init(&vector_lock, NULL) != 0)    
+    if (pthread_mutex_init(&vector_lock, NULL) != 0) {
+        fprintf(stderr, "Error initializing mutex.\n");  
         exit(1);    //error management
+    }
 
     long n_threads = global_params[NUMBER_THREADS];
     working_threads = (pthread_t*) malloc(n_threads * (sizeof(pthread_t)));						//<============

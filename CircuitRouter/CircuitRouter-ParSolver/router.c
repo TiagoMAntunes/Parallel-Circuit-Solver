@@ -51,9 +51,10 @@
  */
 
 
-#include <assert.h>             //line 295
-#include <stdlib.h>             //line 361
-#include <pthread.h>            //added extern pthread_mutex_t global_lock to .h
+#include <assert.h>             
+#include <stdlib.h>             
+#include <pthread.h>  
+#include <errno.h>          
 #include "coordinate.h"
 #include "grid.h"
 #include "lib/queue.h"
@@ -306,7 +307,10 @@ void release_locks(grid_t *gridPtr, vector_t *pointVectorPtr, pthread_mutex_t *g
 
     for(int i = 1; i < maxI; i++){
         grid_getPointIndices(gridPtr, (long *)((pointVectorPtr->elements)[i]), &x, &y, &z);
-        pthread_mutex_unlock(&(grid_locks[z*maxX*maxY + y*maxX + x]));
+        if (pthread_mutex_unlock(&(grid_locks[z*maxX*maxY + y*maxX + x])) != 0) {
+            fprintf(stderr, "Error unlocking grid_lock.\n");
+            exit(1);
+        }
     }
 }
 
@@ -357,7 +361,8 @@ bool_t try_locks(grid_t* gridPtr, vector_t *pointVectorPtr, pthread_mutex_t *gri
        
         for(i = 1; i < size-1; i++){
             grid_getPointIndices(gridPtr, (long *)((pointVectorPtr->elements)[i]), &x, &y, &z);
-            if (pthread_mutex_trylock(&(grid_locks[z*maxX*maxY + y*maxX + x]))) {
+            int flag = pthread_mutex_trylock(&(grid_locks[z*maxX*maxY + y*maxX + x]));
+            if (flag == EBUSY) {
                 //can't lock, go back
                 release_locks(gridPtr, pointVectorPtr, grid_locks, i);
                 grid_undoPath_Ptr(pointVectorPtr, i);
@@ -367,9 +372,15 @@ bool_t try_locks(grid_t* gridPtr, vector_t *pointVectorPtr, pthread_mutex_t *gri
                 release_locks(gridPtr, pointVectorPtr, grid_locks, i+1);
                 grid_undoPath_Ptr(pointVectorPtr, i);
                 return FALSE;
+            } else if (flag == 0) {
+                //all good, fill point
+                grid_setPoint(gridPtr, x,y,z, GRID_POINT_FULL);
+
+            } else {
+                fprintf(stderr, "Error trying to aquire grid_lock.\n");
+                exit(1);
             }
-            //all good, fill point
-            grid_setPoint(gridPtr, x,y,z, GRID_POINT_FULL);
+
         }
         if (i == size-1) 
             success = 1;
@@ -417,11 +428,15 @@ void *router_solve (void* argPtr){
         } else {
             if (pthread_mutex_lock(&queue_lock) == 0) {
             	coordinatePairPtr = (pair_t*)queue_pop(workQueuePtr);
-            	if (pthread_mutex_unlock(&queue_lock) != 0)
+            	if (pthread_mutex_unlock(&queue_lock) != 0) {
+                    fprintf(stderr, "Error unlocking queue_lock.\n");
             		exit(1);
+                }
             }
-            else 
+            else {
+                fprintf(stderr, "Error locking queue_lock.\n");
             	exit(1);
+            }
         }
         if (coordinatePairPtr == NULL) {
             break;
@@ -464,11 +479,15 @@ void *router_solve (void* argPtr){
 
     if (pthread_mutex_lock(&vector_lock) == 0) {
     	list_insert(pathVectorListPtr, (void*)myPathVectorPtr); 
-    	if (pthread_mutex_unlock(&vector_lock) != 0)
-    	exit(1);            
+    	if (pthread_mutex_unlock(&vector_lock) != 0) {
+            fprintf(stderr, "Error unlocking vector_lock.\n");
+            exit(1);            
+        }
     }
-   	else 
+   	else {
+        fprintf(stderr, "Error locking vector_lock.\n");
    		exit(1);
+    }
 
     grid_free(myGridPtr);
     queue_free(myExpansionQueuePtr);
