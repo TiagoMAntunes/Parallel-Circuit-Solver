@@ -30,4 +30,3 @@ $(OBJS):
 clean:
 	@echo Cleaning...
 	rm -f $(OBJS) $(TARGET)
-	cd inputs && rm -rf *.res *.old
