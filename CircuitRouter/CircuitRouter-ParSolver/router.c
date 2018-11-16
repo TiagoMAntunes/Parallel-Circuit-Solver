@@ -386,6 +386,7 @@ bool_t try_locks(grid_t* gridPtr, vector_t *pointVectorPtr, pthread_mutex_t *gri
             success = 1;
         else {
             //sleeps for v nanoseconds
+	    printf("ESTUDASSES!\n");
             long v = exponential(tries++);
             struct timespec ts_sleep = { (time_t) (v / 1000000000), v % 1000000000}; 
             nanosleep(&ts_sleep, NULL);

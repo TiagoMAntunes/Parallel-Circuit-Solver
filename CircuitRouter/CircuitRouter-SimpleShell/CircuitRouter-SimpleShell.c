@@ -1,107 +1,149 @@
+
+/*
+// Projeto SO - exercise 1, version 1
+// Sistemas Operativos, DEI/IST/ULisboa 2018-19
+*/
+
+#include "lib/commandlinereader.h"
+#include "lib/vector.h"
+#include "CircuitRouter-SimpleShell.h"
 #include <stdio.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>
+#include <limits.h>
 #include <unistd.h>
-#include <sys/wait.h>
-#include "Process.h"
-#include "list.h"
-#include "../lib/commandlinereader.h"
+#include <errno.h>
 
-#define MAXARGS 8
+#define COMMAND_EXIT "exit"
+#define COMMAND_RUN "run"
 
-void manageProcesses(char ** args);
-void newProcess(char ** args);
-Node updateStatus(int state, int pid, Node h);
+#define MAXARGS 3
+#define BUFFER_SIZE 100
 
-int MAXCHILDREN, currentProcesses = 0;
-Node liveProcesses, deadProcesses;
+void waitForChild(vector_t *children) {
+    while (1) {
+        child_t *child = malloc(sizeof(child_t));
+        if (child == NULL) {
+            perror("Error allocating memory");
+            exit(EXIT_FAILURE);
+        }
+        child->pid = wait(&(child->status));
+        if (child->pid < 0) {
+            if (errno == EINTR) {
+                /* Este codigo de erro significa que chegou signal que interrompeu a espera
+                   pela terminacao de filho; logo voltamos a esperar */
+                free(child);
+                continue;
+            } else {
+                perror("Unexpected error while waiting for child.");
+                exit (EXIT_FAILURE);
+            }
+        }
+        vector_pushBack(children, child);
+        return;
+    }
+}
 
-int main(int argc, char * argv[]) {
-    char **args, *buf;
+void printChildren(vector_t *children) {
+    for (int i = 0; i < vector_getSize(children); ++i) {
+        child_t *child = vector_at(children, i);
+        int status = child->status;
+        pid_t pid = child->pid;
+        if (pid != -1) {
+            const char* ret = "NOK";
+            if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
+                ret = "OK";
+            }
+            printf("CHILD EXITED: (PID=%d; return %s)\n", pid, ret);
+        }
+    }
+    puts("END.");
+}
 
-    buf = malloc(sizeof(char) * 10000);
-    args = calloc(MAXARGS+1, sizeof(char *));
-    liveProcesses = createNode(NULL); //list of processes running
-    deadProcesses = createNode(NULL); //list of processes that have finished
-    if (argc > 1) {
-        sscanf(argv[1], "%d", &MAXCHILDREN);
-    } else 
-        MAXCHILDREN = 0;
+int main (int argc, char** argv) {
 
-    while(1) {
-        readLineArguments(args, MAXARGS, buf, 10000);
-        if (*args != NULL && !strcmp(args[0], "exit"))
+    char *args[MAXARGS + 1];
+    char buffer[BUFFER_SIZE];
+    int MAXCHILDREN = -1;
+    vector_t *children;
+    int runningChildren = 0;
+
+    if(argv[1] != NULL){
+        MAXCHILDREN = atoi(argv[1]);
+    }
+
+    children = vector_alloc(MAXCHILDREN);
+
+
+    printf("Welcome to CircuitRouter-SimpleShell\n\n");
+
+    while (1) {
+        int numArgs;
+
+        numArgs = readLineArguments(args, MAXARGS+1, buffer, BUFFER_SIZE);
+
+        /* EOF (end of file) do stdin ou comando "sair" */
+        if (numArgs < 0 || (numArgs > 0 && (strcmp(args[0], COMMAND_EXIT) == 0))) {
+            printf("CircuitRouter-SimpleShell will exit.\n--\n");
+
+            /* Espera pela terminacao de cada filho */
+            while (runningChildren > 0) {
+                waitForChild(children);
+                runningChildren --;
+            }
+
+            printChildren(children);
+            printf("--\nCircuitRouter-SimpleShell ended.\n");
             break;
-        else if (*args != NULL && !strcmp(args[0], "run"))  {
-            args[0] = "../CircuitRouter-SeqSolver/CircuitRouter-SeqSolver";
-            manageProcesses(args);
-        } else 
-            printf("Invalid arguments\n");
+        }
+
+        else if (numArgs > 0 && strcmp(args[0], COMMAND_RUN) == 0){
+            int pid;
+            if (numArgs < 2) {
+                printf("%s: invalid syntax. Try again.\n", COMMAND_RUN);
+                continue;
+            }
+            if (MAXCHILDREN != -1 && runningChildren >= MAXCHILDREN) {
+                waitForChild(children);
+                runningChildren--;
+            }
+
+            pid = fork();
+            if (pid < 0) {
+                perror("Failed to create new process.");
+                exit(EXIT_FAILURE);
+            }
+
+            if (pid > 0) {
+                runningChildren++;
+                printf("%s: background child started with PID %d.\n\n", COMMAND_RUN, pid);
+                continue;
+            } else {
+                char seqsolver[] = "../CircuitRouter-SeqSolver/CircuitRouter-SeqSolver";
+                char *newArgs[3] = {seqsolver, args[1], NULL};
+
+                execv(seqsolver, newArgs);
+                perror("Error while executing child process"); // Nao deveria chegar aqui
+                exit(EXIT_FAILURE);
+            }
+        }
+
+        else if (numArgs == 0){
+            /* Nenhum argumento; ignora e volta a pedir */
+            continue;
+        }
+        else
+            printf("Unknown command. Try again.\n");
+
     }
 
-    //after exit, we must finish all tasks and free memory
-    int pid, state;
-    while(next(liveProcesses) != NULL) {
-        pid = wait(&state);
-
-        Node new = updateStatus(state, pid, liveProcesses);
-        
-        insert(deadProcesses, new);
-        removeByPID(pid, liveProcesses);
+    for (int i = 0; i < vector_getSize(children); i++) {
+        free(vector_at(children, i));
     }
+    vector_free(children);
 
-    printAll(deadProcesses);
-    printf("END.\n");
-
-    freeAll(liveProcesses);
-    freeAll(deadProcesses);
-    free(buf);
-    free(args);
-	 
-}
-
-void manageProcesses(char ** args) {
-    int pid, state;
-    //printf("%d\n", currentProcesses); //debug only
-    if (!MAXCHILDREN || (MAXCHILDREN && (currentProcesses < MAXCHILDREN))) { //can start right away
-        newProcess(args);   
-    } else if (currentProcesses >= MAXCHILDREN) { //need to wait for a process to finish
-        pid = wait(&state);
-        Node new = updateStatus(state, pid, liveProcesses);
-        currentProcesses--;
-        insert(deadProcesses, new);        
-        removeByPID(pid, liveProcesses);
-        newProcess(args);
-    }
-}
-
-void newProcess(char ** args) {
-    int pid;
-    pid = fork();
-    if (pid < 0) {
-        abort();
-    }
-    else if (pid == 0) { //child process executes a new seq-solver
-        //printf("Creating process with file %s\n", filename);
-        execv(args[0], args);
-	    abort();
-    } else {
-        Process * p = createProcess(pid); //creates new process and adds it to the list
-        insert(liveProcesses, createNode(p));
-        currentProcesses++;
-    }
-}
-
-
-Node updateStatus(int state, int pid, Node h) {
-    int status = -1;
-
-    if (WIFEXITED(state) && (WEXITSTATUS(state) == 0)) {
-        status = 0;
-    }
-
-    Node new = createNode(getByPID(pid, liveProcesses));
-    new->item->status = status;
-
-    return new;
+    return EXIT_SUCCESS;
 }
