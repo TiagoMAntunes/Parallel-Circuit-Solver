@@ -34,22 +34,36 @@ int main() {
     int PIPE_PATH_SIZE = strlen(PIPE_PATH);
     if (PWD_SIZE <  PIPE_PATH_SIZE + 6)
         if (realloc(PIPE_PATH, (PIPE_PATH_SIZE+6) * sizeof(char)) == NULL)
-            exit(-1);
+            exit(-1);  
     strcat(PIPE_PATH, ".pipe");
 
-    //open the PIPE_PATH with read mode
-    unlink(PIPE_PATH);
-    if (mkfifo(PIPE_PATH, 0777) < 0) exit(-1);
-    if ((in = open(PIPE_PATH, O_RDONLY)) < 0) 
+
+    if (unlink(PIPE_PATH) != 0) {
+        fprintf(stderr, "Error unlinking pipe.\n");
         exit(-1);
+    }
+
+    //open the PIPE_PATH with read mode
+    if (mkfifo(PIPE_PATH, 0777) < 0) {
+        fprintf(stderr, "Error creating named pipe.\n");
+        exit(-1);
+    }
+    
+    if ((in = open(PIPE_PATH, O_RDONLY)) < 0) {
+        fprintf(stderr, "Error accessing pipe.\n");
+        exit(-1);
+    }
 
     while (TRUE) {
         n = read(in, buf, BUFSIZE);
-        if (n<= 0) break;
+        if (n <= 0) break;
         printf("%s\n", buf);
     }
 
     close(in);
-    unlink(PIPE_PATH);    
+    if (unlink(PIPE_PATH) != 0) {
+        fprintf(stderr, "Error unlinking pipe.\n");
+        exit(-1);
+    }   
     return 0;
 }
