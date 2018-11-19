@@ -1,1 +1,1 @@
-export PIPEPATH=/home/tiagoantunes/Documents/IST/2ano/SO/CircuitRouter/CircuitRouter-AdvShell.pipe
+export PIPEPATH=$PWD/CircuitRouter-AdvShell.pipe
