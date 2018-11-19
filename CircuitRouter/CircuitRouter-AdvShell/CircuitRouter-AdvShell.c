@@ -8,7 +8,7 @@
 #include <unistd.h>
 #include <errno.h>
 
-#define BUFSIZE 1024
+#define BUFSIZE 4096
 #define TRUE 1
 int PWD_SIZE = 64;
 
@@ -38,7 +38,7 @@ int main() {
     strcat(PIPE_PATH, ".pipe");
 
 
-    if (unlink(PIPE_PATH) != 0) {
+    if (unlink(PIPE_PATH) != 0 && errno != ENOENT) {
         fprintf(stderr, "Error unlinking pipe.\n");
         exit(-1);
     }
