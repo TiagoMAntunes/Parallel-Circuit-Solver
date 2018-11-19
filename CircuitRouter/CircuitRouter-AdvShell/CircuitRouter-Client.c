@@ -34,7 +34,7 @@ int main(int argc, char* argv[]) {
         exit(0);
     }
 
-    if ((out = open(argv[1], O_WRONLY)) < 0)
+    if ((out = open(argv[1], O_WRONLY)) < 0) 
         exit(-1);
 
     while (TRUE) {

@@ -12,6 +12,22 @@
 #define TRUE 1
 int PWD_SIZE = 64;
 
+int split(char* parsedInfo[2], char* buffer) {
+    int validCommand = 1;
+
+    char *pid = strtok(buffer, "\\|");
+    char *command = strtok(NULL, "\\|");
+
+    if (strcmp(strtok(command, " "), "run") != 0)
+        validCommand = 0;
+
+    parsedInfo[0] = pid;
+    parsedInfo[1] = command;
+
+    return validCommand;
+}
+
+
 int main() {
     int in, n;
     char buf[BUFSIZE];
@@ -54,10 +70,15 @@ int main() {
         exit(-1);
     }
 
+    char* parsedInfo[2];
     while (TRUE) {
         n = read(in, buf, BUFSIZE);
+
+        int validCommand = split(parsedInfo, buf);
+        printf("Valid Command? %s\n", (validCommand ==1 ? "yes" : "no"));
+        printf("PID: %s\nComman: %s\n", parsedInfo[0], parsedInfo[1]);
+
         if (n <= 0) break;
-        printf("%s\n", buf);
     }
 
     close(in);
