@@ -28,29 +28,13 @@ int split(char* parsedInfo[2], char* buffer) {
 }
 
 
-int main() {
+int main(int argc, char * argv[]) {
     int in, n;
     char buf[BUFSIZE];
 
-    char * PIPE_PATH = (char *) malloc(sizeof(char) * PWD_SIZE);
-
-    //get the current directory
-    while (getcwd(PIPE_PATH, PWD_SIZE) == NULL) {
-        switch (errno) {
-            case ERANGE:
-                PWD_SIZE = PWD_SIZE * 2;
-                PIPE_PATH = realloc(PIPE_PATH, PWD_SIZE * sizeof(char));
-                break;
-            default:
-                exit(-1);
-        }
-    }
-
-    //get the PIPE_PATH name
-    int PIPE_PATH_SIZE = strlen(PIPE_PATH);
-    if (PWD_SIZE <  PIPE_PATH_SIZE + 6)
-        if (realloc(PIPE_PATH, (PIPE_PATH_SIZE+6) * sizeof(char)) == NULL)
-            exit(-1);  
+    //Create the pipe name
+    char * PIPE_PATH = (char *) malloc(sizeof(char) * (strlen(argv[0]) + 6));
+    strcpy(PIPE_PATH, argv[0]);
     strcat(PIPE_PATH, ".pipe");
 
 
@@ -64,7 +48,7 @@ int main() {
         fprintf(stderr, "Error creating named pipe.\n");
         exit(-1);
     }
-    
+   
     if ((in = open(PIPE_PATH, O_RDONLY)) < 0) {
         fprintf(stderr, "Error accessing pipe.\n");
         exit(-1);
@@ -73,12 +57,11 @@ int main() {
     char* parsedInfo[2];
     while (TRUE) {
         n = read(in, buf, BUFSIZE);
+        if (n <= 0) break;
 
         int validCommand = split(parsedInfo, buf);
         printf("Valid Command? %s\n", (validCommand ==1 ? "yes" : "no"));
         printf("PID: %s\nComman: %s\n", parsedInfo[0], parsedInfo[1]);
-
-        if (n <= 0) break;
     }
 
     close(in);
