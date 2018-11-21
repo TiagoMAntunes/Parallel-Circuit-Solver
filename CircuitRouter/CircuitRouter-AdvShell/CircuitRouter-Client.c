@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/stat.h>
 
 #define TRUE 1
 #define BUFSIZE 4096
@@ -26,20 +27,37 @@ int getMessage(char buf[], int size) {
 }
 
 int main(int argc, char* argv[]) {
-    int out;
-    char buf[BUFSIZE];
+    int out, in;
+    char buf[BUFSIZE], pid[10];
 
     if (argc != 2) {
         printf("Usage: ./CircuitRouter-Client <server pipe path>\n");
         exit(0);
     }
 
+    snprintf(pid, 10, "%d", getpid());
+    char * SELF_PATH = (char *) malloc(sizeof(char) * (strlen(argv[0]) + strlen(pid) + 6));
+    strcpy(SELF_PATH, argv[0]);
+    strcat(SELF_PATH, pid);
+    strcat(SELF_PATH, ".pipe");
+    
+    if (mkfifo(SELF_PATH, 0777) < 0) {
+        fprintf(stderr, "Error creating named pipe.\n");
+        exit(-1);
+    }
+
+
     if ((out = open(argv[1], O_WRONLY)) < 0) 
         exit(-1);
+
 
     while (TRUE) {
         getMessage(buf, BUFSIZE);
         write(out, buf, BUFSIZE);
+        /*while((in = open(SELF_PATH, O_RDONLY)) < 0)
+            ;
+        read(in, buf, BUFSIZE);
+        printf("%s\n", buf);*/
     }
 
     close(out);

@@ -17,4 +17,4 @@ $(OBJS):
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 clean:
-	rm -rf *.o $(CLIENT) $(ADVANCED) -- --*
+	rm -rf *.o $(CLIENT) $(ADVANCED) -- --* *.pipe
