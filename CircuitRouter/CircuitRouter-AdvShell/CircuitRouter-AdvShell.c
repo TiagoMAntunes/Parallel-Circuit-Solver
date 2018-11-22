@@ -7,9 +7,11 @@
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
+#include <sys/wait.h>
 
 #define BUFSIZE 4096
 #define TRUE 1
+
 int PWD_SIZE = 64;
 
 int split(char* parsedInfo[2], char* buffer) {
@@ -22,14 +24,14 @@ int split(char* parsedInfo[2], char* buffer) {
         validCommand = 0;
 
     parsedInfo[0] = pid;
-    parsedInfo[1] = command;
+    parsedInfo[1] = strtok(NULL, " ");
 
     return validCommand;
 }
 
 
 int main(int argc, char * argv[]) {
-    int in, n;
+    int in, n, pid;
     char buf[BUFSIZE];
 
     //Create the pipe name
@@ -56,18 +58,39 @@ int main(int argc, char * argv[]) {
 
     char* parsedInfo[2];
     while (TRUE) {
-        n = read(in, buf, BUFSIZE);
+        n = read(in, buf, BUFSIZE); //antes disto nao deveria ser um select? para se ler do stdin e do pipe
         if (n <= 0) break;
 
         int validCommand = split(parsedInfo, buf);
-        printf("Valid Command? %s\n", (validCommand ==1 ? "yes" : "no"));
-        printf("PID: %s\nComman: %s\n", parsedInfo[0], parsedInfo[1]);
+        
+        if ((pid = fork()) == 0) {
+            
+            char* clientPID = parsedInfo[0];
+            printf("Input file from client (%s): %s\n", clientPID, parsedInfo[1]);
+
+            char *args[3];
+            args[0] = clientPID;
+            args[1] = parsedInfo[1];
+            args[2] = NULL;
+
+            execv("../CircuitRouter-SeqSolver/CircuitRouter-SeqSolver", args);          
+            exit(EXIT_FAILURE);
+
+        }
+        else if (pid > 0) {
+            wait(NULL);
+            // TODO criar a estrutura correspondente ao processo filho e comecar a contar o tempo
+        }
+        else {
+            perror("Failed to create new process.");
+            exit(EXIT_FAILURE);
+        }
     }
 
     close(in);
     if (unlink(PIPE_PATH) != 0) {
         fprintf(stderr, "Error unlinking pipe.\n");
-        exit(-1);
+        exit(EXIT_FAILURE);
     }   
     return 0;
 }

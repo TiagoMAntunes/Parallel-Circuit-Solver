@@ -63,6 +63,11 @@
 #include "lib/timer.h"
 #include "lib/types.h"
 
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <fcntl.h>
+
 enum param_types {
     PARAM_BENDCOST = (unsigned char)'b',
     PARAM_XCOST    = (unsigned char)'x',
@@ -120,7 +125,7 @@ static int parseArgs (long argc, char* const argv[]){
 
     setDefaultParams();
 
-    while ((opt = getopt(argc, argv, "hb:px:y:z:")) != -1) {
+    while ((opt = getopt(argc, argv, "hb:x:y:z:")) != -1) {
         switch (opt) {
             case 'b':
             case 'x':
@@ -136,7 +141,7 @@ static int parseArgs (long argc, char* const argv[]){
         }
     }
 
-    for (i = optind; i < argc - 1; i++) {
+    for (i = optind; i < argc - 2; i++) {
         fprintf(stderr, "Non-option argument: %s\n", argv[i]);
         opterr++;
     }
@@ -239,6 +244,26 @@ int main(int argc, char** argv){
 
     TIMER_T stopTime;
     TIMER_READ(stopTime);
+
+//======================================
+
+    char * clientPID = argv[0];
+    char *CLIENT_PATH = (char *) malloc(sizeof(char) * (strlen("./CircuitRouter-Client") + strlen(clientPID) + 6));
+    strcpy(CLIENT_PATH, "./CircuitRouter-Client");
+    strcat(CLIENT_PATH, clientPID);
+    strcat(CLIENT_PATH, ".pipe");
+
+    int out;
+    if ((out = open(CLIENT_PATH, O_WRONLY)) < 0) {
+        fprintf(stderr, "Error opening client pipe.\n");
+        exit(EXIT_FAILURE);   
+    }
+
+    char *msg = "Circuit Solved";
+    write(out, msg, strlen(msg));
+    free(CLIENT_PATH);
+
+//======================================
 
     long numPathRouted = 0;
     list_iter_t it;

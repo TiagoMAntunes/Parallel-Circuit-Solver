@@ -26,9 +26,11 @@ int getMessage(char buf[], int size) {
     return i;
 }
 
+
+
 int main(int argc, char* argv[]) {
     int out, in;
-    char buf[BUFSIZE], pid[10];
+    char outbuf[BUFSIZE], inbuf[BUFSIZE], pid[10];
 
     if (argc != 2) {
         printf("Usage: ./CircuitRouter-Client <server pipe path>\n");
@@ -47,17 +49,19 @@ int main(int argc, char* argv[]) {
     }
 
 
-    if ((out = open(argv[1], O_WRONLY)) < 0) 
+    if ((out = open(argv[1], O_WRONLY)) < 0) {
+        fprintf(stderr, "Error opening.\n");
         exit(-1);
+    }
 
 
     while (TRUE) {
-        getMessage(buf, BUFSIZE);
-        write(out, buf, BUFSIZE);
-        /*while((in = open(SELF_PATH, O_RDONLY)) < 0)
+        getMessage(outbuf, BUFSIZE);
+        write(out, outbuf, BUFSIZE);
+        while((in = open(SELF_PATH, O_RDONLY)) < 0)
             ;
-        read(in, buf, BUFSIZE);
-        printf("%s\n", buf);*/
+        read(in, inbuf, BUFSIZE);
+        printf("%s\n", inbuf);
     }
 
     close(out);
