@@ -1,4 +1,4 @@
-#include "Process.h"
+#include "process.h"
 #include "../lib/timer.h"
 #include <stdlib.h>
 #include <stdio.h>
