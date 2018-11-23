@@ -203,23 +203,26 @@ int main(int argc, char** argv){
      * Initialization
      */
 
-
+    int out = atoi(argv[0]);
     int opterr = parseArgs(argc, (char** const)argv);
-        
+    
     maze_t* mazePtr = maze_alloc();
     assert(mazePtr);
     
     char *input_file_name = argv[argc - 1];
     char *output_file_name = create_output_file(input_file_name);
-
+    
     FILE *input_file = fopen(input_file_name, "r");
     FILE *output_file = fopen(output_file_name, "w");
 
-    if (output_file == NULL)     //Error management
+    if (output_file == NULL) {    //Error management 
+        write(out, "Error solving file", 18);
         exit(1);
+    }
 
     if (input_file == NULL) {    //Error management
         fprintf(output_file, "%s: No such file or directory\n", input_file_name);
+        write(out, "Error solving file", 18);
         exit(1);
     }
 
@@ -244,7 +247,7 @@ int main(int argc, char** argv){
 
     TIMER_T stopTime;
     TIMER_READ(stopTime);
-
+    
     long numPathRouted = 0;
     list_iter_t it;
     list_iter_reset(&it, pathVectorListPtr);
@@ -284,9 +287,7 @@ int main(int argc, char** argv){
     list_free(pathVectorListPtr);
 
     //======================================
-
     char *msg = "Circuit Solved";
-    int out = atoi(argv[0]);
     write(out, msg, strlen(msg));
 
     //======================================

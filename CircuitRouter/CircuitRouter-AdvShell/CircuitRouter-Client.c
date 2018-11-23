@@ -28,10 +28,12 @@ int getMessage(char buf[], int size) {
     //write pid to array
     i = snprintf(buf, size-1, "%d", getpid());
     buf[i++] = '|';
+    
     while ((c = getchar()) != '\n' && c != EOF && i < size-1) {
         buf[i++] = c;
     }
-    if (c ==EOF)
+    
+    if (c == EOF)
         exit(-1);
     buf[i] = '\0';
     return i;
@@ -54,6 +56,8 @@ int main(int argc, char* argv[]) {
     strcat(SELF_PATH, pid);
     strcat(SELF_PATH, ".pipe");
     
+    unlink(SELF_PATH);
+
     if (mkfifo(SELF_PATH, 0777) < 0) {
         fprintf(stderr, "Error creating named pipe.\n");
         exit(-1);

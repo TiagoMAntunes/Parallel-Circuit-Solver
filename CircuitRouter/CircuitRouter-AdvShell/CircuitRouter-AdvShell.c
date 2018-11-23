@@ -24,8 +24,8 @@ int split(char* parsedInfo[2], char* buffer) {
 
     char *pid = strtok(buffer, "\\|");
     char *command = strtok(NULL, "\\|");
-
-    if (strcmp(strtok(command, " "), "run") != 0)
+    char * helper;
+    if ((helper = strtok(command, " ")) != NULL && strcmp(helper, "run") != 0)
         validCommand = 0;
 
     parsedInfo[0] = pid;
@@ -67,6 +67,11 @@ void handleChild(int sig, siginfo_t *si, void *context) {
     }
 }
 
+void clear_buffer(char buf[], int size) {
+    for (int i = 0; i < size; i++)
+        buf[i] = 0;
+}
+
 int main(int argc, char * argv[]) {
     int in, n, pid;
     char buf[BUFSIZE];
@@ -100,9 +105,21 @@ int main(int argc, char * argv[]) {
 
     char* parsedInfo[2];
     while (TRUE) {
-        n = read(in, buf, BUFSIZE); //antes disto nao deveria ser um select? para se ler do stdin e do pipe
-        if (n <= 0) break;
-
+        int ok_read = 0;
+        char tmp_buf[BUFSIZE];
+        clear_buffer(buf, BUFSIZE);
+        while (!ok_read) {
+            clear_buffer(tmp_buf, BUFSIZE);
+            n = read(in, tmp_buf, BUFSIZE);
+            if ((n < 0 && errno != EINTR) || n == 0)
+                break;
+            else if (n > 0)
+                ok_read = 1;
+            strcat(buf, tmp_buf);
+        }
+        if (!ok_read)
+            break;
+        
         int validCommand = split(parsedInfo, buf);
         int out = connectToClient(parsedInfo);
 
@@ -110,6 +127,7 @@ int main(int argc, char * argv[]) {
         if (!validCommand) {
             char *invalidCommand = "Command not suported.";
             write(out, invalidCommand, strlen(invalidCommand));
+            continue;
         }
         
         if ((pid = fork()) == 0) {
