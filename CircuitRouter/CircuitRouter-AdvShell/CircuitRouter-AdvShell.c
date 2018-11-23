@@ -87,7 +87,7 @@ int main(int argc, char * argv[]) {
 
         if (!validCommand) {
             char *invalidCommand = "Command not suported.";
-            write(out, invalidCommand, sizeof(invalidCommand));
+            write(out, invalidCommand, strlen(invalidCommand));
         }
         
         if ((pid = fork()) == 0) {

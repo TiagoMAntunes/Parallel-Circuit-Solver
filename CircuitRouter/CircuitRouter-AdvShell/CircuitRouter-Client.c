@@ -66,13 +66,14 @@ int main(int argc, char* argv[]) {
     }
 
     signal(SIGINT, handleInterrupt);
-
+    int readSize;
     while (TRUE) {
         getMessage(outbuf, BUFSIZE);
         write(out, outbuf, BUFSIZE);
         while((in = open(SELF_PATH, O_RDONLY)) < 0)
             ;
-        read(in, inbuf, BUFSIZE);
+        readSize = read(in, inbuf, BUFSIZE-1);
+        inbuf[readSize] = '\0';
         printf("%s\n", inbuf);
     }
 
