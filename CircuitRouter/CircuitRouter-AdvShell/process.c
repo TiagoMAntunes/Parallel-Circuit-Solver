@@ -7,11 +7,11 @@
  * createProcess
  *******************************************************************************
 */
-Process * createProcess(int pid, int status, clock_t sysTime, clock_t usrTime) {
+Process * createProcess(int pid, time_t start) {
     Process * p = malloc(sizeof(struct process));
     p->pid = pid;
-    p->status = status;
-    p->duration = sysTime;
+    p->status = 0;
+    p->start = start;
     return p;
 }
 
@@ -28,7 +28,7 @@ void freeProcess(Process * p) {
  *******************************************************************************
 */
 float processTime(Process * p) {
-    return p->duration;// / CLOCKS_PER_SEC;
+    return difftime(p->finish, p->start);
 }
 
 /*******************************************************************************

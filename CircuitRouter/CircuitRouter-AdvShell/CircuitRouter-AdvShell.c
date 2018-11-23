@@ -58,9 +58,12 @@ int connectToClient(char *info[2]) {
 void handleChild(int sig, siginfo_t *si, void *context) { 
     switch(sig) {
         case SIGCHLD:
-   //         Process *p = createProcess((int) si->si_pid, si->si_status,  si->si_stime, si->si_utime);
-   //         Node n = createNode(p)
-            insert(deadProcesses, createNode(createProcess((int) si->si_pid, si->si_status,  si->si_stime, si->si_utime)));
+            if (si->si_code == CLD_EXITED) {
+                time_t stop;
+                time(&stop);
+                Process *p = getByPID(si->si_pid, liveProcesses);
+                p->finish = stop;
+            }
             break;
         default:
             return;
@@ -130,6 +133,8 @@ int main(int argc, char * argv[]) {
             continue;
         }
         
+        time_t start;
+        time(&start);
         if ((pid = fork()) == 0) {
 
             char *args[3];
@@ -145,8 +150,11 @@ int main(int argc, char * argv[]) {
         else if (pid > 0) {
             sigaction(SIGCHLD, &sa, NULL);        
             close(out);
-        //    sleep(10);                    o sitio final disto nao é aqui, é so para testar o tempo
-        //    printAll(deadProcesses);
+            Process *p = createProcess(pid, start);
+            Node n = createNode(p);
+            insert(liveProcesses, n);
+            sleep(10);                   // o sitio final disto nao é aqui, é so para testar o tempo
+            printAll(liveProcesses);
         }
         else {
             perror("Failed to create new process.");

@@ -5,7 +5,7 @@
 
 typedef struct process {
     int pid, status;
-    clock_t duration;
+    time_t start, finish;
 } Process;
 
 /*******************************************************************************
@@ -14,7 +14,7 @@ typedef struct process {
  * Output: Pointer to process with id equal to pid
  *******************************************************************************
 */
-Process * createProcess(int pid, int status, clock_t sysTime, clock_t usrTime);
+Process * createProcess(int pid, time_t start);
 
 /*******************************************************************************
  * freeProcess
