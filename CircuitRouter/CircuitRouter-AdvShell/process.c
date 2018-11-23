@@ -7,10 +7,11 @@
  * createProcess
  *******************************************************************************
 */
-Process * createProcess(int pid) {
+Process * createProcess(int pid, TIMER_T startTime) {
     Process * p = malloc(sizeof(struct process));
     p->pid = pid;
     p->status = -1;
+    p->start = startTime;
     return p;
 }
 

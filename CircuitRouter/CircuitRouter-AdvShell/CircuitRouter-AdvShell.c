@@ -8,11 +8,14 @@
 #include <unistd.h>
 #include <errno.h>
 #include <sys/wait.h>
+#include "process.h"
+#include "list.h"
 
 #define BUFSIZE 4096
 #define TRUE 1
 
 int PWD_SIZE = 64;
+Node liveProcesses, deadProcesses;
 
 int split(char* parsedInfo[2], char* buffer) {
     int validCommand = 1;
@@ -53,6 +56,8 @@ int connectToClient(char *info[2]) {
 int main(int argc, char * argv[]) {
     int in, n, pid;
     char buf[BUFSIZE];
+    liveProcesses = createNode(NULL); //list of processes running
+    deadProcesses = createNode(NULL); //list of processes that have finished
 
     //Create the pipe name
     char * PIPE_PATH = (char *) malloc(sizeof(char) * (strlen(argv[0]) + 6));
@@ -103,10 +108,13 @@ int main(int argc, char * argv[]) {
             exit(EXIT_FAILURE);
 
         }
-        else if (pid > 0) {
-            wait(NULL);
+        else if (pid > 0) {        
             close(out);
-            // TODO criar a estrutura correspondente ao processo filho e comecar a contar o tempo
+            TIMER_T startTime;
+            TIMER_READ(startTime);
+            Process * p = createProcess(pid, startTime); //creates new process and adds it to the list
+            insert(liveProcesses, createNode(p));
+            wait(NULL);
         }
         else {
             perror("Failed to create new process.");
