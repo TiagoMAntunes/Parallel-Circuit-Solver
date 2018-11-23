@@ -9,9 +9,10 @@
 #include <errno.h>
 #include <sys/wait.h>
 #include <signal.h>
-#include <time.h>
+#include <sys/times.h>
 #include "process.h"
 #include "list.h"
+#include "../lib/timer.h"
 
 #define BUFSIZE 4096
 #define TRUE 1
@@ -59,10 +60,10 @@ void handleChild(int sig, siginfo_t *si, void *context) {
     switch(sig) {
         case SIGCHLD:
             if (si->si_code == CLD_EXITED) {
-                time_t stop;
-                time(&stop);
+                TIMER_T stopTime;
+                TIMER_READ(stopTime);
                 Process *p = getByPID(si->si_pid, liveProcesses);
-                p->finish = stop;
+                p->finish = stopTime;
             }
             break;
         default:
@@ -133,8 +134,8 @@ int main(int argc, char * argv[]) {
             continue;
         }
         
-        time_t start;
-        time(&start);
+        TIMER_T startTime;
+        TIMER_READ(startTime);
         if ((pid = fork()) == 0) {
 
             char *args[3];
@@ -150,11 +151,11 @@ int main(int argc, char * argv[]) {
         else if (pid > 0) {
             sigaction(SIGCHLD, &sa, NULL);        
             close(out);
-            Process *p = createProcess(pid, start);
+            Process *p = createProcess(pid, startTime);
             Node n = createNode(p);
             insert(liveProcesses, n);
-            sleep(10);                   // o sitio final disto nao é aqui, é so para testar o tempo
-            printAll(liveProcesses);
+            //sleep(10);                   // o sitio final disto nao é aqui, é so para testar o tempo
+            //printAll(liveProcesses);
         }
         else {
             perror("Failed to create new process.");
@@ -167,5 +168,6 @@ int main(int argc, char * argv[]) {
         fprintf(stderr, "Error unlinking pipe.\n");
         exit(EXIT_FAILURE);
     }   
+    printAll(liveProcesses);
     return 0;
 }

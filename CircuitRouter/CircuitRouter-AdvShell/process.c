@@ -7,7 +7,7 @@
  * createProcess
  *******************************************************************************
 */
-Process * createProcess(int pid, time_t start) {
+Process * createProcess(int pid, TIMER_T start) {
     Process * p = malloc(sizeof(struct process));
     p->pid = pid;
     p->status = 0;
@@ -28,7 +28,7 @@ void freeProcess(Process * p) {
  *******************************************************************************
 */
 float processTime(Process * p) {
-    return difftime(p->finish, p->start);
+    return TIMER_DIFF_SECONDS(p->start, p->finish);
 }
 
 /*******************************************************************************
@@ -52,6 +52,6 @@ int getPid(Process * p) {
  *******************************************************************************
 */
 void printProcess(Process * p) {
-    printf("CHILD EXITED (PID=%d; return %s; %.0f)\n", getPid(p), 
+    printf("CHILD EXITED (PID=%d; return %s; %0.5f)\n", getPid(p), 
                                     (status(p) == 0 ? "OK" : "NOK"), processTime(p));
 }
