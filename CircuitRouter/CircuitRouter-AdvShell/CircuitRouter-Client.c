@@ -6,9 +6,20 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <signal.h>
+
 
 #define TRUE 1
 #define BUFSIZE 4096
+
+char * SELF_PATH;
+
+//On CTRL+C, unlink pipe and free memory.
+void handleInterrupt(int sig) {
+    unlink(SELF_PATH);
+    free(SELF_PATH);
+    exit(0);
+}
 
 int getMessage(char buf[], int size) {
     int i;
@@ -38,7 +49,7 @@ int main(int argc, char* argv[]) {
     }
 
     snprintf(pid, 10, "%d", getpid());
-    char * SELF_PATH = (char *) malloc(sizeof(char) * (strlen(argv[0]) + strlen(pid) + 6));
+    SELF_PATH = (char *) malloc(sizeof(char) * (strlen(argv[0]) + strlen(pid) + 6));
     strcpy(SELF_PATH, argv[0]);
     strcat(SELF_PATH, pid);
     strcat(SELF_PATH, ".pipe");
@@ -54,6 +65,7 @@ int main(int argc, char* argv[]) {
         exit(-1);
     }
 
+    signal(SIGINT, handleInterrupt);
 
     while (TRUE) {
         getMessage(outbuf, BUFSIZE);
