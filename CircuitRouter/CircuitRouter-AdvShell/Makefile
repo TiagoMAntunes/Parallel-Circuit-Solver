@@ -8,12 +8,13 @@ CLIENT = CircuitRouter-Client
 
 all: CircuitRouter-AdvShell CircuitRouter-Client
 
-CircuitRouter-AdvShell: CircuitRouter-AdvShell.o process.o
+CircuitRouter-AdvShell: CircuitRouter-AdvShell.o process.o list.o
 CircuitRouter-Client: CircuitRouter-Client.o
 
 CircuitRouter-AdvShell.o: CircuitRouter-AdvShell.c
 CircuitRouter-Client.o: CircuitRouter-Client.c
 process.o: process.c process.h
+list.o: list.c list.h
 $(OBJS):
 	$(CC) $(CFLAGS) -c -o $@ $<
 

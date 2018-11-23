@@ -1,4 +1,4 @@
-#include "Process.h"
+#include "process.h"
 
 typedef struct node {
     Process * item;
