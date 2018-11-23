@@ -247,21 +247,9 @@ int main(int argc, char** argv){
 
 //======================================
 
-    char * clientPID = argv[0];
-    char *CLIENT_PATH = (char *) malloc(sizeof(char) * (strlen("./CircuitRouter-Client") + strlen(clientPID) + 6));
-    strcpy(CLIENT_PATH, "./CircuitRouter-Client");
-    strcat(CLIENT_PATH, clientPID);
-    strcat(CLIENT_PATH, ".pipe");
-
-    int out;
-    if ((out = open(CLIENT_PATH, O_WRONLY)) < 0) {
-        fprintf(stderr, "Error opening client pipe.\n");
-        exit(EXIT_FAILURE);   
-    }
-
     char *msg = "Circuit Solved";
+    int out = atoi(argv[0]);
     write(out, msg, strlen(msg));
-    free(CLIENT_PATH);
 
 //======================================
 

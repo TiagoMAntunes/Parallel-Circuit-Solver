@@ -30,6 +30,26 @@ int split(char* parsedInfo[2], char* buffer) {
 }
 
 
+int connectToClient(char *info[2]) {
+    //creating pipe to talk to client
+    char* clientPID = info[0];
+    printf("Input file from client (%s): %s\n", clientPID, info[1]);
+
+    char *CLIENT_PATH = (char *) malloc(sizeof(char) * (strlen("./CircuitRouter-Client") + strlen(clientPID) + 6));
+    strcpy(CLIENT_PATH, "./CircuitRouter-Client");
+    strcat(CLIENT_PATH, clientPID);
+    strcat(CLIENT_PATH, ".pipe");
+
+    int out;
+    if ((out = open(CLIENT_PATH, O_WRONLY)) < 0) {
+        fprintf(stderr, "Error opening client pipe.\n");
+        exit(EXIT_FAILURE);   
+    }
+
+    free(CLIENT_PATH);
+    return out;
+}
+
 int main(int argc, char * argv[]) {
     int in, n, pid;
     char buf[BUFSIZE];
@@ -62,14 +82,20 @@ int main(int argc, char * argv[]) {
         if (n <= 0) break;
 
         int validCommand = split(parsedInfo, buf);
+        int out = connectToClient(parsedInfo);
+
+
+        if (!validCommand) {
+            char *invalidCommand = "Command not suported.";
+            write(out, invalidCommand, sizeof(invalidCommand));
+        }
         
         if ((pid = fork()) == 0) {
-            
-            char* clientPID = parsedInfo[0];
-            printf("Input file from client (%s): %s\n", clientPID, parsedInfo[1]);
 
             char *args[3];
-            args[0] = clientPID;
+            char outStr[12];
+            sprintf(outStr, "%d", out);
+            args[0] = outStr;
             args[1] = parsedInfo[1];
             args[2] = NULL;
 
@@ -79,6 +105,7 @@ int main(int argc, char * argv[]) {
         }
         else if (pid > 0) {
             wait(NULL);
+            close(out);
             // TODO criar a estrutura correspondente ao processo filho e comecar a contar o tempo
         }
         else {
