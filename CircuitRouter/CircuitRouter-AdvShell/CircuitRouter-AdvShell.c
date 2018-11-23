@@ -8,6 +8,8 @@
 #include <unistd.h>
 #include <errno.h>
 #include <sys/wait.h>
+#include <signal.h>
+#include <time.h>
 #include "process.h"
 #include "list.h"
 
@@ -53,11 +55,26 @@ int connectToClient(char *info[2]) {
     return out;
 }
 
+void handleChild(int sig, siginfo_t *si, void *context) { 
+    switch(sig) {
+        case SIGCHLD:
+   //         Process *p = createProcess((int) si->si_pid, si->si_status,  si->si_stime, si->si_utime);
+   //         Node n = createNode(p)
+            insert(deadProcesses, createNode(createProcess((int) si->si_pid, si->si_status,  si->si_stime, si->si_utime)));
+            break;
+        default:
+            return;
+    }
+}
+
 int main(int argc, char * argv[]) {
     int in, n, pid;
     char buf[BUFSIZE];
     liveProcesses = createNode(NULL); //list of processes running
     deadProcesses = createNode(NULL); //list of processes that have finished
+    struct sigaction sa;
+    sa.sa_flags = SA_SIGINFO;
+    sa.sa_sigaction = handleChild;
 
     //Create the pipe name
     char * PIPE_PATH = (char *) malloc(sizeof(char) * (strlen(argv[0]) + 6));
@@ -106,15 +123,12 @@ int main(int argc, char * argv[]) {
 
             execv("../CircuitRouter-SeqSolver/CircuitRouter-SeqSolver", args);          
             exit(EXIT_FAILURE);
-
         }
-        else if (pid > 0) {        
+        else if (pid > 0) {
+            sigaction(SIGCHLD, &sa, NULL);        
             close(out);
-            TIMER_T startTime;
-            TIMER_READ(startTime);
-            Process * p = createProcess(pid, startTime); //creates new process and adds it to the list
-            insert(liveProcesses, createNode(p));
-            wait(NULL);
+        //    sleep(10);                    o sitio final disto nao é aqui, é so para testar o tempo
+        //    printAll(deadProcesses);
         }
         else {
             perror("Failed to create new process.");

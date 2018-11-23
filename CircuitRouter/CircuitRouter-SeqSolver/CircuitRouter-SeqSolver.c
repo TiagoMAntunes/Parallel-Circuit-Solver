@@ -245,14 +245,6 @@ int main(int argc, char** argv){
     TIMER_T stopTime;
     TIMER_READ(stopTime);
 
-//======================================
-
-    char *msg = "Circuit Solved";
-    int out = atoi(argv[0]);
-    write(out, msg, strlen(msg));
-
-//======================================
-
     long numPathRouted = 0;
     list_iter_t it;
     list_iter_reset(&it, pathVectorListPtr);
@@ -290,6 +282,14 @@ int main(int argc, char** argv){
         vector_free(pathVectorPtr);
     }
     list_free(pathVectorListPtr);
+
+    //======================================
+
+    char *msg = "Circuit Solved";
+    int out = atoi(argv[0]);
+    write(out, msg, strlen(msg));
+
+    //======================================
     
     exit(0);
 }

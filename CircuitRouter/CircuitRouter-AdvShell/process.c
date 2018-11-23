@@ -1,5 +1,5 @@
 #include "process.h"
-#include "../lib/timer.h"
+#include <time.h> 
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -7,11 +7,11 @@
  * createProcess
  *******************************************************************************
 */
-Process * createProcess(int pid, TIMER_T startTime) {
+Process * createProcess(int pid, int status, clock_t sysTime, clock_t usrTime) {
     Process * p = malloc(sizeof(struct process));
     p->pid = pid;
-    p->status = -1;
-    p->start = startTime;
+    p->status = status;
+    p->duration = sysTime;
     return p;
 }
 
@@ -28,7 +28,7 @@ void freeProcess(Process * p) {
  *******************************************************************************
 */
 float processTime(Process * p) {
-    return TIMER_DIFF_SECONDS(p->start, p->finish);
+    return p->duration;// / CLOCKS_PER_SEC;
 }
 
 /*******************************************************************************

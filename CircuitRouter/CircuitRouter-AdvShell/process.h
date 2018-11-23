@@ -1,11 +1,11 @@
-#include "../lib/timer.h" 
+#include <time.h> 
 
 #ifndef __PROCESS_H
 #define __PROCESS_H
 
 typedef struct process {
     int pid, status;
-    TIMER_T start, finish;
+    clock_t duration;
 } Process;
 
 /*******************************************************************************
@@ -14,7 +14,7 @@ typedef struct process {
  * Output: Pointer to process with id equal to pid
  *******************************************************************************
 */
-Process * createProcess(int pid, TIMER_T startTime);
+Process * createProcess(int pid, int status, clock_t sysTime, clock_t usrTime);
 
 /*******************************************************************************
  * freeProcess
