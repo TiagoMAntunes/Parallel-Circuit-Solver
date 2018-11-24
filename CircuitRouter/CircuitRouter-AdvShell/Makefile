@@ -6,8 +6,9 @@ LDFLAGS = -lm
 ADVANCED = CircuitRouter-AdvShell
 CLIENT = CircuitRouter-Client
 
-all: CircuitRouter-AdvShell CircuitRouter-Client
-
+all: CircuitRouter-AdvShell CircuitRouter-Client Solver
+Solver:
+	cd .. && make
 CircuitRouter-AdvShell: CircuitRouter-AdvShell.o process.o list.o ../lib/commandlinereader.o
 CircuitRouter-Client: CircuitRouter-Client.o
 
@@ -21,3 +22,4 @@ $(OBJS):
 
 clean:
 	rm -rf *.o $(CLIENT) $(ADVANCED) -- --* *.pipe
+	cd .. && make clean
