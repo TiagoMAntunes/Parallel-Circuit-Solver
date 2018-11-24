@@ -20,6 +20,7 @@
 #define CLIENT_EXEC "./CircuitRouter-Client"
 
 int PWD_SIZE = 64;
+int child_count = 0;
 Node liveProcesses;
 char * PIPE_PATH;
 
@@ -70,8 +71,11 @@ void handleSigint(int sig, siginfo_t *si, void *context) {
                 fprintf(stderr, "Error unlinking pipe.\n");
                 exit(EXIT_FAILURE);
             }   
+            printf("%d\n", child_count);
+            while (child_count);
             printf("\n");
             printAll(liveProcesses);
+            exit(0);
         default:
             return;
     }
@@ -87,6 +91,7 @@ void handleChild(int sig, siginfo_t *si, void *context) {
                 Process *p = getByPID(si->si_pid, liveProcesses);
                 p->finish = stopTime;
                 p->status = si->si_status;
+                child_count--;
             }
             break;
         default:
@@ -195,6 +200,7 @@ int main(int argc, char * argv[]) {
             Process *p = createProcess(pid, startTime);
             Node n = createNode(p);
             insert(liveProcesses, n);
+            child_count++;
         }
         else {
             perror("Failed to create new process.");
