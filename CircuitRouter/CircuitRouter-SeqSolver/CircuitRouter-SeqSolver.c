@@ -222,7 +222,7 @@ int main(int argc, char** argv){
 
     if (input_file == NULL) {    //Error management
         fprintf(output_file, "%s: No such file or directory\n", input_file_name);
-        perror("Error solving file")
+        perror("Error solving file");
         exit(1);
     }
 
