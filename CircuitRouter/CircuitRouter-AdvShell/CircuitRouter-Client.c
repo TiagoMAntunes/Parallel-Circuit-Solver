@@ -8,9 +8,12 @@
 #include <sys/stat.h>
 #include <signal.h>
 
-
+#define KNRM  "\x1B[0m"
+#define KRED  "\x1B[31m"
+#define KGRN  "\x1B[32m"
 #define TRUE 1
 #define BUFSIZE 4096
+
 
 char * SELF_PATH;
 
@@ -19,6 +22,18 @@ void handleInterrupt(int sig) {
     unlink(SELF_PATH);
     free(SELF_PATH);
     exit(0);
+}
+
+void displayHeader() {
+    printf(">>> ");
+}
+
+void displayResult(char * array) {
+    if (!strcmp(array, "Circuit Solved"))
+        printf("%s%s\n", KGRN, array);
+    else
+        printf("%s%s\n", KRED, array);
+    printf("%s", KNRM);
 }
 
 int getMessage(char buf[], int size) {
@@ -72,14 +87,13 @@ int main(int argc, char* argv[]) {
     signal(SIGINT, handleInterrupt);
     int readSize;
     while (TRUE) {
+        displayHeader();
         getMessage(outbuf, BUFSIZE);
         write(out, outbuf, BUFSIZE);
         while((in = open(SELF_PATH, O_RDONLY)) < 0)
             ;
         readSize = read(in, inbuf, BUFSIZE-1);
         inbuf[readSize] = '\0';
-        printf("%s\n", inbuf);
+        displayResult(inbuf);
     }
-
-    close(out);
 }

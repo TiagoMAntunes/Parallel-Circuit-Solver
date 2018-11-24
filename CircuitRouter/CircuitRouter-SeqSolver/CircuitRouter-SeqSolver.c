@@ -216,13 +216,13 @@ int main(int argc, char** argv){
     FILE *output_file = fopen(output_file_name, "w");
 
     if (output_file == NULL) {    //Error management 
-        write(out, "Error solving file", 18);
+        perror("Error solving file");
         exit(1);
     }
 
     if (input_file == NULL) {    //Error management
         fprintf(output_file, "%s: No such file or directory\n", input_file_name);
-        write(out, "Error solving file", 18);
+        perror("Error solving file")
         exit(1);
     }
 

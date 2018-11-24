@@ -64,6 +64,7 @@ void handleChild(int sig, siginfo_t *si, void *context) {
                 TIMER_READ(stopTime);
                 Process *p = getByPID(si->si_pid, liveProcesses);
                 p->finish = stopTime;
+                p->status = si->si_status;
             }
             break;
         default:
@@ -144,7 +145,8 @@ int main(int argc, char * argv[]) {
             args[0] = outStr;
             args[1] = parsedInfo[1];
             args[2] = NULL;
-
+            close(2);
+            dup(out);
             execv("../CircuitRouter-SeqSolver/CircuitRouter-SeqSolver", args);          
             exit(EXIT_FAILURE);
         }
