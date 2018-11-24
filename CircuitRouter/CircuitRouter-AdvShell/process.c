@@ -52,6 +52,6 @@ int getPid(Process * p) {
  *******************************************************************************
 */
 void printProcess(Process * p) {
-    printf("CHILD EXITED (PID=%d; return %s; %0.5f)\n", getPid(p), 
+    printf("CHILD EXITED (PID=%d; return %s; %0.5f s)\n", getPid(p), 
                                     (status(p) == 0 ? "OK" : "NOK"), processTime(p));
 }

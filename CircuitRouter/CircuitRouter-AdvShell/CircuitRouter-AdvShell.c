@@ -13,12 +13,17 @@
 #include "process.h"
 #include "list.h"
 #include "../lib/timer.h"
+#include "../lib/commandlinereader.h"
 
 #define BUFSIZE 4096
 #define TRUE 1
+#define COMMAND_EXIT "exit"
+#define COMMAND_RUN "run"
+#define MAXARGS 2
 
 int PWD_SIZE = 64;
-Node liveProcesses, deadProcesses;
+Node liveProcesses;
+int countChildren;
 
 int split(char* parsedInfo[2], char* buffer) {
     int validCommand = 1;
@@ -65,6 +70,8 @@ void handleChild(int sig, siginfo_t *si, void *context) {
                 Process *p = getByPID(si->si_pid, liveProcesses);
                 p->finish = stopTime;
                 p->status = si->si_status;
+                //bloquear interrupcoes
+                countChildren--;
             }
             break;
         default:
@@ -78,10 +85,10 @@ void clear_buffer(char buf[], int size) {
 }
 
 int main(int argc, char * argv[]) {
-    int in, n, pid;
+    int in, n, pid, fromClient = 1;
     char buf[BUFSIZE];
     liveProcesses = createNode(NULL); //list of processes running
-    deadProcesses = createNode(NULL); //list of processes that have finished
+    countChildren = 0;
     struct sigaction sa;
     sa.sa_flags = SA_SIGINFO;
     sa.sa_sigaction = handleChild;
@@ -109,38 +116,84 @@ int main(int argc, char * argv[]) {
     }
 
     char* parsedInfo[2];
+
+    fd_set fdset, tempset;
+    FD_ZERO(&fdset);                   // clears set of fd's to read from
+    FD_SET(STDIN_FILENO, &fdset);      // set the bit for stdin
+    FD_SET(in, &fdset);                // set the bit for in
+    int maxfd = STDIN_FILENO > in ? STDIN_FILENO + 1 : in + 1; 
     while (TRUE) {
-        int ok_read = 0;
+        tempset = fdset;            // reset tempset
+        int selectVal = select(maxfd, &tempset, NULL, NULL, NULL);
+        if (selectVal == EINTR) {
+            continue;
+        } 
+
+        else if (selectVal == EBADF) {
+            printf("shit happened\n");
+            exit(1);
+        }
+
+        int out;
         char tmp_buf[BUFSIZE];
         clear_buffer(buf, BUFSIZE);
-        while (!ok_read) {
-            clear_buffer(tmp_buf, BUFSIZE);
-            n = read(in, tmp_buf, BUFSIZE);
-            if ((n < 0 && errno != EINTR) || n == 0)
+
+        // going to read from client's pipe
+        if (FD_ISSET(in, &tempset)) {   
+            printf("reading from client\n"); 
+            int ok_read = 0;
+            fromClient = 1;  
+            while (!ok_read) {
+                clear_buffer(tmp_buf, BUFSIZE);
+                n = read(in, tmp_buf, BUFSIZE-strlen(buf));
+                if ((n < 0 && errno != EINTR) || n == 0)
+                    break;
+                else if (n > 0)
+                    ok_read = 1;
+                strcat(buf, tmp_buf);
+            }
+
+
+            int validCommand = split(parsedInfo, buf);
+            out = connectToClient(parsedInfo);
+
+            if (!validCommand) {
+                char *invalidCommand = "Command not suported.";
+                write(out, invalidCommand, strlen(invalidCommand));
+                continue;
+            }
+        }
+
+        // going to read from server's stdin
+        else if (FD_ISSET(STDIN_FILENO, &tempset)) { 
+            printf("reading from stdin\n");
+            int numArgs = readLineArguments(parsedInfo, MAXARGS+1, buf, BUFSIZE);
+
+            if (numArgs == 0) {
+                continue;
+            }
+            else if (numArgs > 0 && strcmp(parsedInfo[0], COMMAND_EXIT) != 0 && strcmp(parsedInfo[0], COMMAND_RUN) != 0) {
+                printf("Unknown command. Try again.\n");
+                continue;
+            }
+            else if (numArgs < 0 || (numArgs > 0 && (strcmp(parsedInfo[0], COMMAND_EXIT) == 0))) {
+                printf("CircuitRouter-SimpleShell will exit.\n--\n");
                 break;
-            else if (n > 0)
-                ok_read = 1;
-            strcat(buf, tmp_buf);
-        }
-        if (!ok_read)
-            break;
+            }
         
-        int validCommand = split(parsedInfo, buf);
-        int out = connectToClient(parsedInfo);
+            else 
+                fromClient = 0;   
+        } 
 
-
-        if (!validCommand) {
-            char *invalidCommand = "Command not suported.";
-            write(out, invalidCommand, strlen(invalidCommand));
-            continue;
-        }
-        
+       
         TIMER_T startTime;
         TIMER_READ(startTime);
         if ((pid = fork()) == 0) {
-
             char *args[3];
             char outStr[12];
+            if (!fromClient) {
+                out = STDOUT_FILENO;
+            }
             sprintf(outStr, "%d", out);
             args[0] = outStr;
             args[1] = parsedInfo[1];
@@ -156,8 +209,7 @@ int main(int argc, char * argv[]) {
             Process *p = createProcess(pid, startTime);
             Node n = createNode(p);
             insert(liveProcesses, n);
-            //sleep(10);                   // o sitio final disto nao é aqui, é so para testar o tempo
-            //printAll(liveProcesses);
+            countChildren++;
         }
         else {
             perror("Failed to create new process.");
@@ -169,7 +221,9 @@ int main(int argc, char * argv[]) {
     if (unlink(PIPE_PATH) != 0) {
         fprintf(stderr, "Error unlinking pipe.\n");
         exit(EXIT_FAILURE);
-    }   
+    }  
+
+    while (countChildren != 0) ;    //wait for all children to finish
     printAll(liveProcesses);
     return 0;
 }
