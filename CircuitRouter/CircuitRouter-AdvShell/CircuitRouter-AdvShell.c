@@ -24,6 +24,17 @@ int child_count = 0;
 Node liveProcesses;
 char * PIPE_PATH;
 
+void exitRoutine() {
+	if (unlink(PIPE_PATH) != 0) {
+       	fprintf(stderr, "Error unlinking pipe.\n");
+        exit(EXIT_FAILURE);
+    }   
+    while (child_count);
+    printf("\n");
+    printAll(liveProcesses);
+    exit(0);
+}
+
 
 //Splits a given input in the first '|' found
 int split(char* parsedInfo[2], char* buffer) {
@@ -32,14 +43,19 @@ int split(char* parsedInfo[2], char* buffer) {
     char *pid = strtok(buffer, "\\|");
     char *command = strtok(NULL, "\\|");
     char * helper;
-    if ((helper = strtok(command, " ")) != NULL && strcmp(helper, "run") != 0)
-        validCommand = 0;
+    if ((helper = strtok(command, " ")) != NULL && strcmp(helper, "run") != 0) {
+    	validCommand = 0;
+    	if ((getppid() == atoi(pid)) && (strcmp(helper, "exit") == 0)) {
+    		exitRoutine();
+    	}
+    }
 
     parsedInfo[0] = pid;
     parsedInfo[1] = strtok(NULL, " ");
 
     return validCommand;
 }
+
 
 //returns the file descriptor that points to the client that sent a message
 int connectToClient(char *info[2]) {
@@ -67,15 +83,7 @@ int connectToClient(char *info[2]) {
 void handleSigint(int sig, siginfo_t *si, void *context) {
     switch(sig) {
         case SIGINT:
-            if (unlink(PIPE_PATH) != 0) {
-                fprintf(stderr, "Error unlinking pipe.\n");
-                exit(EXIT_FAILURE);
-            }   
-            printf("%d\n", child_count);
-            while (child_count);
-            printf("\n");
-            printAll(liveProcesses);
-            exit(0);
+            exitRoutine();
         default:
             return;
     }
@@ -132,6 +140,9 @@ int main(int argc, char * argv[]) {
     if (pid > 0)
         execl(CLIENT_EXEC, CLIENT_EXEC, PIPE_PATH, NULL);
 
+
+    close(STDIN_FILENO);
+    
     //Remove existing PIPE_PATH
     if (unlink(PIPE_PATH) != 0 && errno != ENOENT) {
         fprintf(stderr, "Error unlinking pipe.\n");
@@ -179,6 +190,7 @@ int main(int argc, char * argv[]) {
             write(out, invalidCommand, strlen(invalidCommand));
             continue;
         }
+
         
         TIMER_T startTime; //measure start time of process
         TIMER_READ(startTime);
