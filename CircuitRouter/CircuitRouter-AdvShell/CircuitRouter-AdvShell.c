@@ -30,7 +30,6 @@ void exitRoutine() {
         exit(EXIT_FAILURE);
     }   
     while (child_count);
-    printf("\n");
     printAll(liveProcesses);
     exit(0);
 }
@@ -46,6 +45,7 @@ int split(char* parsedInfo[2], char* buffer) {
     if ((helper = strtok(command, " ")) != NULL && strcmp(helper, "run") != 0) {
     	validCommand = 0;
     	if ((getppid() == atoi(pid)) && (strcmp(helper, "exit") == 0)) {
+            kill(getppid(), SIGINT);
     		exitRoutine();
     	}
     }
@@ -69,7 +69,7 @@ int connectToClient(char *info[2]) {
     strcat(CLIENT_PATH, ".pipe");
     
     //creates the pipe
-    int out;
+    int out;    
     if ((out = open(CLIENT_PATH, O_WRONLY)) < 0) {
         fprintf(stderr, "Error opening client pipe.\n");
         exit(EXIT_FAILURE);   
@@ -122,13 +122,19 @@ int main(int argc, char * argv[]) {
     struct sigaction childHandler;
     childHandler.sa_flags = SA_SIGINFO;
     childHandler.sa_sigaction = handleChild;
-    sigaction(SIGCHLD, &childHandler, NULL);   
+    if (sigaction(SIGCHLD, &childHandler, NULL)!= 0) {
+        fprintf(stderr, "Error installing sigaction.\n");
+        exit(EXIT_FAILURE);
+    }   
 
     //Create the SIGINT handler
     struct sigaction endHandler;
     endHandler.sa_flags = SA_SIGINFO;
     endHandler.sa_sigaction = handleSigint;
-    sigaction(SIGINT, &endHandler, NULL);
+    if (sigaction(SIGINT, &endHandler, NULL)) {
+        fprintf(stderr, "Error installing sigaction.\n");
+        exit(EXIT_FAILURE);
+    }
 
     //Create the pipe name
     PIPE_PATH = (char *) malloc(sizeof(char) * (strlen(argv[0]) + 6));
@@ -140,25 +146,29 @@ int main(int argc, char * argv[]) {
     if (pid > 0)
         execl(CLIENT_EXEC, CLIENT_EXEC, PIPE_PATH, NULL);
 
-
-    close(STDIN_FILENO);
+    int closeFlag;
+    while ((closeFlag = close(STDIN_FILENO)) == EINTR) ;
+    if (closeFlag != 0) {
+        fprintf(stderr, "Error closing file descriptor.\n");
+        exit(EXIT_FAILURE); 
+    }
     
     //Remove existing PIPE_PATH
     if (unlink(PIPE_PATH) != 0 && errno != ENOENT) {
         fprintf(stderr, "Error unlinking pipe.\n");
-        exit(-1);
+        exit(EXIT_FAILURE);
     }
 
     //open the PIPE_PATH with read mode
     if (mkfifo(PIPE_PATH, 0777) < 0) {
         fprintf(stderr, "Error creating named pipe.\n");
-        exit(-1);
+        exit(EXIT_FAILURE);
     }
     
     //Wait for *at least* 1 connection
     if ((in = open(PIPE_PATH, O_RDONLY)) < 0) {
         fprintf(stderr, "Error accessing pipe.\n");
-        exit(-1);
+        exit(EXIT_FAILURE);
     }
 
     char* parsedInfo[2];
@@ -187,7 +197,11 @@ int main(int argc, char * argv[]) {
 
         if (!validCommand) {
             char *invalidCommand = "Command not suported.";
-            write(out, invalidCommand, strlen(invalidCommand));
+            if (write(out, invalidCommand, strlen(invalidCommand)) < 0) {
+                fprintf(stderr, "Error writing to pipe.\n");
+                exit(EXIT_FAILURE);
+            }
+
             continue;
         }
 
@@ -202,13 +216,24 @@ int main(int argc, char * argv[]) {
             args[0] = outStr;
             args[1] = parsedInfo[1];
             args[2] = NULL;
-            close(2); //bye bye stderr
-            dup(out); //if something bad happens, the error is written to the client so it won't stay blocked
+            while ((closeFlag = close(2)) == EINTR) ; //bye bye stderr
+            if (closeFlag != 0) {
+                fprintf(stderr, "Error closing file descriptor.\n");
+                exit(EXIT_FAILURE);
+            }
+            if (dup(out) < 0) { //if something bad happens, the error is written to the client so it won't stay blocked
+                fprintf(stderr, "Error duplicating file descriptor.\n");
+                exit(EXIT_FAILURE);
+            } 
             execv(SOLVER_EXEC, args);      
             exit(EXIT_FAILURE);
         }
         else if (pid > 0) {     
-            close(out);
+            while((closeFlag = close(out)) == EINTR) ;
+            if (closeFlag != 0) {
+                fprintf(stderr, "Error closing file descriptor.\n");
+                exit(EXIT_FAILURE);
+            }
             Process *p = createProcess(pid, startTime);
             Node n = createNode(p);
             insert(liveProcesses, n);
