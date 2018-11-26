@@ -23,6 +23,7 @@ int PWD_SIZE = 64;
 int child_count = 0;
 Node liveProcesses;
 char * PIPE_PATH;
+int alive = 1;
 
 void exitRoutine() {
 	if (unlink(PIPE_PATH) != 0) {
@@ -83,7 +84,7 @@ int connectToClient(char *info[2]) {
 void handleSigint(int sig, siginfo_t *si, void *context) {
     switch(sig) {
         case SIGINT:
-            exitRoutine();
+            alive = 0;
         default:
             return;
     }
@@ -172,7 +173,7 @@ int main(int argc, char * argv[]) {
     }
 
     char* parsedInfo[2];
-    while (TRUE) {
+    while (alive) {
         int ok_read = 0;
         char tmp_buf[BUFSIZE];
         
@@ -244,4 +245,6 @@ int main(int argc, char * argv[]) {
             exit(EXIT_FAILURE);
         }
     }
+    printf("\n");
+    exitRoutine();
 }
