@@ -37,16 +37,18 @@ void displayResult(char * array) {
 }
 
 int getMessage(char buf[], int size) {
-    int i;
+    int i, j;
     char c;
 
     //write pid to array
     i = snprintf(buf, size-1, "%d", getpid());
     buf[i++] = '|';
+    j = i;
     
-    while ((c = getchar()) != '\n' && c != EOF && i < size-1) {
-        buf[i++] = c;
-    }
+    while (i == j)
+        while ((c = getchar()) != '\n' && c != EOF && i < size-1) {
+            buf[i++] = c;
+        }
     
     if (c == EOF)
         exit(-1);
