@@ -82,7 +82,7 @@ int connectToClient(char *info[2]) {
 }
 
 //Signal interruption handler (SIGINT)
-void handleSigint(int sig) {
+void handleSigint(int sig, siginfo_t *si, void *context) {
     switch(sig) {
         case SIGINT:
             alive = 0;
@@ -120,6 +120,11 @@ int main(int argc, char * argv[]) {
     int in, n, pid;
     char buf[BUFSIZE];
     liveProcesses = createNode(NULL); //list of processes running
+    int MAXCHILDREN = 0;
+
+    if (argv[1] != NULL) {
+        MAXCHILDREN = atoi(argv[1]);
+    }
 
     
     //Create the SIGCHLD handler
@@ -133,7 +138,8 @@ int main(int argc, char * argv[]) {
 
     //Create the SIGINT handler
     struct sigaction endHandler;
-    endHandler.sa_handler = handleSigint;
+    endHandler.sa_flags = SA_SIGINFO;
+    endHandler.sa_sigaction = handleSigint;
     if (sigaction(SIGINT, &endHandler, NULL)) {
         fprintf(stderr, "Error installing sigaction.\n");
         exit(EXIT_FAILURE);
@@ -216,6 +222,12 @@ int main(int argc, char * argv[]) {
         sigset_t old_mask;
         sigemptyset(&new_mask);
         sigaddset(&new_mask, SIGCHLD);
+
+
+        // waits for SIGCHLD, which causes child_count to drecrease;
+        if (MAXCHILDREN) {
+            while (child_count >= MAXCHILDREN) ;
+        }
 
         TIMER_T startTime; //measure start time of process
         TIMER_READ(startTime); 

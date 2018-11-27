@@ -51,7 +51,7 @@ int getMessage(char buf[], int size) {
         }
     
     if (c == EOF)
-        exit(-1);
+        exit(EXIT_FAILURE);
     buf[i] = '\0';
     return i;
 }
@@ -77,13 +77,13 @@ int main(int argc, char* argv[]) {
 
     if (mkfifo(SELF_PATH, 0777) < 0) {
         fprintf(stderr, "Error creating named pipe.\n");
-        exit(-1);
+        exit(EXIT_FAILURE);
     }
 
 
     if ((out = open(argv[1], O_WRONLY)) < 0) {
         fprintf(stderr, "Error opening.\n");
-        exit(-1);
+        exit(EXIT_FAILURE);
     }
 
     signal(SIGINT, handleInterrupt);
