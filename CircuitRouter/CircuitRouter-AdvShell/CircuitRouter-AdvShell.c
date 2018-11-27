@@ -32,6 +32,7 @@ void exitRoutine() {
     }   
     while (child_count);
     printAll(liveProcesses);
+    freeAll(liveProcesses);
     exit(0);
 }
 
@@ -81,7 +82,7 @@ int connectToClient(char *info[2]) {
 }
 
 //Signal interruption handler (SIGINT)
-void handleSigint(int sig, siginfo_t *si, void *context) {
+void handleSigint(int sig) {
     switch(sig) {
         case SIGINT:
             alive = 0;
@@ -97,7 +98,8 @@ void handleChild(int sig, siginfo_t *si, void *context) {
             if (si->si_code == CLD_EXITED) {
                 TIMER_T stopTime;
                 TIMER_READ(stopTime);
-                Process *p = getByPID(si->si_pid, liveProcesses);
+                int pid = wait(NULL);
+                Process *p = getByPID(pid, liveProcesses);
                 p->finish = stopTime;
                 p->status = si->si_status;
                 child_count--;
@@ -118,6 +120,7 @@ int main(int argc, char * argv[]) {
     int in, n, pid;
     char buf[BUFSIZE];
     liveProcesses = createNode(NULL); //list of processes running
+
     
     //Create the SIGCHLD handler
     struct sigaction childHandler;
@@ -130,8 +133,7 @@ int main(int argc, char * argv[]) {
 
     //Create the SIGINT handler
     struct sigaction endHandler;
-    endHandler.sa_flags = SA_SIGINFO;
-    endHandler.sa_sigaction = handleSigint;
+    endHandler.sa_handler = handleSigint;
     if (sigaction(SIGINT, &endHandler, NULL)) {
         fprintf(stderr, "Error installing sigaction.\n");
         exit(EXIT_FAILURE);
@@ -142,10 +144,12 @@ int main(int argc, char * argv[]) {
     strcpy(PIPE_PATH, argv[0]);
     strcat(PIPE_PATH, ".pipe");
 
+
     //Split process to create server on background and input from stdin
     while ((pid = fork()) < 0);
     if (pid > 0)
         execl(CLIENT_EXEC, CLIENT_EXEC, PIPE_PATH, NULL);
+
 
     int closeFlag;
     while ((closeFlag = close(STDIN_FILENO)) == EINTR) ;
@@ -207,8 +211,14 @@ int main(int argc, char * argv[]) {
         }
 
         
+        // Set mask to block SIGCHLD
+        sigset_t new_mask;
+        sigset_t old_mask;
+        sigemptyset(&new_mask);
+        sigaddset(&new_mask, SIGCHLD);
+
         TIMER_T startTime; //measure start time of process
-        TIMER_READ(startTime);
+        TIMER_READ(startTime); 
         if ((pid = fork()) == 0) {
 
             char *args[3];
@@ -235,10 +245,23 @@ int main(int argc, char * argv[]) {
                 fprintf(stderr, "Error closing file descriptor.\n");
                 exit(EXIT_FAILURE);
             }
+
+            
+
             Process *p = createProcess(pid, startTime);
             Node n = createNode(p);
             insert(liveProcesses, n);
+            if (sigprocmask(SIG_BLOCK, &new_mask, &old_mask) < 0) {
+                fprintf(stderr, "Error with sigprocmask.\n");
+                exit(EXIT_FAILURE);
+            }
+
             child_count++;
+
+            if (sigprocmask(SIG_SETMASK, &old_mask, NULL) < 0) {
+                fprintf(stderr, "Error with sigprocmask.\n");
+                exit(EXIT_FAILURE);
+            }
         }
         else {
             perror("Failed to create new process.");
