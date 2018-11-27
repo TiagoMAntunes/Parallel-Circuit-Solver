@@ -33,6 +33,7 @@ void exitRoutine() {
     while (child_count);
     printAll(liveProcesses);
     freeAll(liveProcesses);
+    kill(getppid(), SIGINT);
     exit(0);
 }
 
@@ -47,7 +48,6 @@ int split(char* parsedInfo[2], char* buffer) {
     if ((helper = strtok(command, " ")) != NULL && strcmp(helper, "run") != 0) {
     	validCommand = 0;
     	if ((getppid() == atoi(pid)) && (strcmp(helper, "exit") == 0)) {
-            kill(getppid(), SIGINT);
     		exitRoutine();
     	}
     }
@@ -192,7 +192,7 @@ int main(int argc, char * argv[]) {
         while (!ok_read) {
             clear_buffer(tmp_buf, BUFSIZE);
             n = read(in, tmp_buf, BUFSIZE);
-            if ((n < 0 && errno != EINTR) || n == 0) // if there was an error other than a signal or no more connections
+            if ((n < 0 && errno != EINTR) || alive != 1 || n == 0) // if there was an error other than a signal (except SIGINT) or no more connections
                 break;
             else if (n > 0) //was able to read something
                 ok_read = 1;
