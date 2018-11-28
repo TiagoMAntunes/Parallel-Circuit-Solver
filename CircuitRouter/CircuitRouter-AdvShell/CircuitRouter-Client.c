@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <signal.h>
+#include <errno.h>
 
 #define KNRM  "\x1B[0m"
 #define KRED  "\x1B[31m"
@@ -42,6 +43,11 @@ int getMessage(char buf[], int size) {
 
     //write pid to array
     i = snprintf(buf, size-1, "%d", getpid());
+    if (i < 0) {
+        fprintf(stderr, "Error with snprintf.\n");
+        exit(EXIT_FAILURE);
+    }
+
     buf[i++] = '|';
     j = i;
     
@@ -67,13 +73,24 @@ int main(int argc, char* argv[]) {
         exit(0);
     }
 
-    snprintf(pid, 10, "%d", getpid());
+    if (snprintf(pid, 10, "%d", getpid()) < 0) {
+        fprintf(stderr, "Error with snprintf.\n");
+        exit(EXIT_FAILURE);
+    }
+
     SELF_PATH = (char *) malloc(sizeof(char) * (strlen(argv[0]) + strlen(pid) + 6));
+    if (SELF_PATH == NULL) {
+        fprintf(stderr, "Error with memory allocation.\n");
+        exit(EXIT_FAILURE);
+    }
     strcpy(SELF_PATH, argv[0]);
     strcat(SELF_PATH, pid);
     strcat(SELF_PATH, ".pipe");
     
-    unlink(SELF_PATH);
+    if (unlink(SELF_PATH) != 0 && errno != ENOENT) {
+        fprintf(stderr, "Error unlinking pipe.\n");
+        exit(EXIT_FAILURE);
+    }
 
     if (mkfifo(SELF_PATH, 0777) < 0) {
         fprintf(stderr, "Error creating named pipe.\n");
@@ -86,12 +103,18 @@ int main(int argc, char* argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    signal(SIGINT, handleInterrupt);
+    if (signal(SIGINT, handleInterrupt) == SIG_ERR) {
+        fprintf(stderr, "Error installing signal.\n");
+        exit(EXIT_FAILURE);
+    }
     int readSize;
     while (TRUE) {
         displayHeader();
         getMessage(outbuf, BUFSIZE);
-        write(out, outbuf, BUFSIZE);
+        if (write(out, outbuf, BUFSIZE) < 0) {
+            fprintf(stderr, "Error writing to pipe.\n");
+            exit(EXIT_FAILURE);
+        }
         while((in = open(SELF_PATH, O_RDONLY)) < 0)
             ;
         readSize = read(in, inbuf, BUFSIZE-1);

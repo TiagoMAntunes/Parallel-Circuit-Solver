@@ -62,10 +62,13 @@ int split(char* parsedInfo[2], char* buffer) {
 //returns the file descriptor that points to the client that sent a message
 int connectToClient(char *info[2]) {
     char* clientPID = info[0];
-    //printf("Input file from client (%s): %s\n", clientPID, info[1]); debugging symbols
 
     //Get the pipe name
     char *CLIENT_PATH = (char *) malloc(sizeof(char) * (strlen("./CircuitRouter-Client") + strlen(clientPID) + 6));
+    if (CLIENT_PATH == NULL) {
+        fprintf(stderr, "Error with memory allocation.\n");
+        exit(EXIT_FAILURE);
+    }
     strcpy(CLIENT_PATH, "./CircuitRouter-Client");
     strcat(CLIENT_PATH, clientPID);
     strcat(CLIENT_PATH, ".pipe");
@@ -82,7 +85,7 @@ int connectToClient(char *info[2]) {
 }
 
 //Signal interruption handler (SIGINT)
-void handleSigint(int sig, siginfo_t *si, void *context) {
+void handleSigint(int sig) {
     switch(sig) {
         case SIGINT:
             alive = 0;
@@ -138,8 +141,7 @@ int main(int argc, char * argv[]) {
 
     //Create the SIGINT handler
     struct sigaction endHandler;
-    endHandler.sa_flags = SA_SIGINFO;
-    endHandler.sa_sigaction = handleSigint;
+    endHandler.sa_handler = handleSigint;
     if (sigaction(SIGINT, &endHandler, NULL)) {
         fprintf(stderr, "Error installing sigaction.\n");
         exit(EXIT_FAILURE);
@@ -147,6 +149,10 @@ int main(int argc, char * argv[]) {
 
     //Create the pipe name
     PIPE_PATH = (char *) malloc(sizeof(char) * (strlen(argv[0]) + 6));
+    if (PIPE_PATH == NULL) {
+        fprintf(stderr, "Error with memory allocation.\n");
+        exit(EXIT_FAILURE);
+    }
     strcpy(PIPE_PATH, argv[0]);
     strcat(PIPE_PATH, ".pipe");
 
@@ -220,8 +226,15 @@ int main(int argc, char * argv[]) {
         // Set mask to block SIGCHLD
         sigset_t new_mask;
         sigset_t old_mask;
-        sigemptyset(&new_mask);
-        sigaddset(&new_mask, SIGCHLD);
+        if (sigemptyset(&new_mask) != 0) {
+            fprintf(stderr, "Error with sigemptyset.\n");
+            exit(EXIT_FAILURE);
+        }
+
+        if (sigaddset(&new_mask, SIGCHLD) != 0) {
+            fprintf(stderr,"Error with sigaddset.\n");
+            exit(EXIT_FAILURE);
+        }
 
 
         // waits for SIGCHLD, which causes child_count to drecrease;
@@ -235,7 +248,10 @@ int main(int argc, char * argv[]) {
 
             char *args[3];
             char outStr[12];
-            sprintf(outStr, "%d", out);
+            if (sprintf(outStr, "%d", out) < 0) {
+                fprintf(stderr, "Error with sprintf.\n");
+                exit(EXIT_FAILURE);
+            }
             args[0] = outStr;
             args[1] = parsedInfo[1];
             args[2] = NULL;
