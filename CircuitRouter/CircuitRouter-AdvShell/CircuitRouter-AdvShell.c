@@ -76,6 +76,7 @@ int connectToClient(char *info[2]) {
     //creates the pipe
     int out;    
     if ((out = open(CLIENT_PATH, O_WRONLY)) < 0) {
+        kill(atoi(clientPID), SIGINT);
         fprintf(stderr, "Error opening client pipe.\n");
         exit(EXIT_FAILURE);   
     }
