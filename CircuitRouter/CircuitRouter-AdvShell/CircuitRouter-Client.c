@@ -103,10 +103,13 @@ int main(int argc, char* argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    if (signal(SIGINT, handleInterrupt) == SIG_ERR) {
-        fprintf(stderr, "Error installing signal.\n");
+    struct sigaction endHandler;
+    endHandler.sa_handler = handleInterrupt;
+    if (sigaction(SIGINT, &endHandler, NULL)) {
+        fprintf(stderr, "Error installing sigaction.\n");
         exit(EXIT_FAILURE);
     }
+
     int readSize;
     while (TRUE) {
         displayHeader();
