@@ -30,7 +30,7 @@ void exitRoutine() {
        	fprintf(stderr, "Error unlinking pipe.\n");
         exit(EXIT_FAILURE);
     }   
-    while (child_count);
+    while (child_count) ;
     printAll(liveProcesses);
     freeAll(liveProcesses);
     kill(getppid(), SIGINT);
@@ -96,16 +96,16 @@ void handleSigint(int sig) {
 }
 
 //Signal child handler (SIGCHLD)
-void handleChild(int sig, siginfo_t *si, void *context) { 
+void handleChild(int sig, siginfo_t *si, void* context) { 
+    int pid, status;
     switch(sig) {
         case SIGCHLD:
-            if (si->si_code == CLD_EXITED) {
+            while((pid = waitpid(-1, &status, WNOHANG)) > 0) {
                 TIMER_T stopTime;
                 TIMER_READ(stopTime);
-                int pid = wait(NULL);
                 Process *p = getByPID(pid, liveProcesses);
                 p->finish = stopTime;
-                p->status = si->si_status;
+                p->status = status;
                 child_count--;
             }
             break;
@@ -240,7 +240,7 @@ int main(int argc, char * argv[]) {
 
         // waits for SIGCHLD, which causes child_count to drecrease;
         if (MAXCHILDREN) {
-            while (child_count >= MAXCHILDREN) ;
+            while (child_count >= MAXCHILDREN);
         }
 
         TIMER_T startTime; //measure start time of process
@@ -265,7 +265,8 @@ int main(int argc, char * argv[]) {
                 fprintf(stderr, "Error duplicating file descriptor.\n");
                 exit(EXIT_FAILURE);
             } 
-            execv(SOLVER_EXEC, args);      
+            execv(SOLVER_EXEC, args);
+            fprintf(stderr, "Error with execv.\n");      
             exit(EXIT_FAILURE);
         }
         else if (pid > 0) {     
@@ -279,12 +280,13 @@ int main(int argc, char * argv[]) {
 
             Process *p = createProcess(pid, startTime);
             Node n = createNode(p);
-            insert(liveProcesses, n);
+            
             if (sigprocmask(SIG_BLOCK, &new_mask, &old_mask) < 0) {
                 fprintf(stderr, "Error with sigprocmask.\n");
                 exit(EXIT_FAILURE);
             }
 
+            insert(liveProcesses, n);
             child_count++;
 
             if (sigprocmask(SIG_SETMASK, &old_mask, NULL) < 0) {
