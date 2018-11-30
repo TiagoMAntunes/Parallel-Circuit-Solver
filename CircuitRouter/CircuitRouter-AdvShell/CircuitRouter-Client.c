@@ -111,6 +111,7 @@ int main(int argc, char* argv[]) {
     }
 
     int readSize;
+    int closeFlag;
     while (TRUE) {
         displayHeader();
         getMessage(outbuf, BUFSIZE);
@@ -118,9 +119,20 @@ int main(int argc, char* argv[]) {
             fprintf(stderr, "Error writing to pipe.\n");
             exit(EXIT_FAILURE);
         }
-        while((in = open(SELF_PATH, O_RDONLY)) < 0)
-            ;
+        if((in = open(SELF_PATH, O_RDONLY)) < 0) {
+            fprintf(stderr, "Error opening pipe");
+            exit(EXIT_FAILURE);
+        }
         readSize = read(in, inbuf, BUFSIZE-1);
+        if (readSize < 0) {
+            fprintf(stderr, "Error reading from pipe\n");
+            exit(EXIT_FAILURE);
+        }
+        while ((closeFlag=close(in)) == EINTR);
+        if (closeFlag != 0) {
+            fprintf(stderr, "Error closing pipe.\n");
+            exit(EXIT_FAILURE);
+        }   
         inbuf[readSize] = '\0';
         displayResult(inbuf);
     }

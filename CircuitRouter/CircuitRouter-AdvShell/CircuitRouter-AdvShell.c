@@ -244,7 +244,17 @@ int main(int argc, char * argv[]) {
         }
 
         TIMER_T startTime; //measure start time of process
+        if (sigprocmask(SIG_BLOCK, &new_mask, &old_mask) < 0) {
+            fprintf(stderr, "Error with sigprocmask.\n");
+            exit(EXIT_FAILURE);
+        }
+        
         TIMER_READ(startTime); 
+
+        if (sigprocmask(SIG_SETMASK, &old_mask, NULL) < 0) {
+            fprintf(stderr, "Error with sigprocmask.\n");
+            exit(EXIT_FAILURE);
+        }
         if ((pid = fork()) == 0) {
 
             char *args[3];
