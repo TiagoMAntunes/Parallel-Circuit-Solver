@@ -99,13 +99,14 @@ int main(int argc, char* argv[]) {
 
 
     if ((out = open(argv[1], O_WRONLY)) < 0) {
-        fprintf(stderr, "Error opening.\n");
+        fprintf(stderr, "Error opening server pipe.\n");
         exit(EXIT_FAILURE);
     }
 
     struct sigaction endHandler;
+    endHandler.sa_flags = SA_RESTART;
     endHandler.sa_handler = handleInterrupt;
-    if (sigaction(SIGINT, &endHandler, NULL)) {
+    if (sigaction(SIGINT, &endHandler, NULL) != 0) {
         fprintf(stderr, "Error installing sigaction.\n");
         exit(EXIT_FAILURE);
     }
@@ -119,20 +120,24 @@ int main(int argc, char* argv[]) {
             fprintf(stderr, "Error writing to pipe.\n");
             exit(EXIT_FAILURE);
         }
+
         if((in = open(SELF_PATH, O_RDONLY)) < 0) {
             fprintf(stderr, "Error opening pipe");
             exit(EXIT_FAILURE);
         }
+
         readSize = read(in, inbuf, BUFSIZE-1);
         if (readSize < 0) {
             fprintf(stderr, "Error reading from pipe\n");
             exit(EXIT_FAILURE);
         }
+
         while ((closeFlag=close(in)) == EINTR);
         if (closeFlag != 0) {
             fprintf(stderr, "Error closing pipe.\n");
             exit(EXIT_FAILURE);
         }   
+
         inbuf[readSize] = '\0';
         displayResult(inbuf);
     }

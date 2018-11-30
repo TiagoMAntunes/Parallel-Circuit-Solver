@@ -96,7 +96,7 @@ void handleSigint(int sig) {
 }
 
 //Signal child handler (SIGCHLD)
-void handleChild(int sig, siginfo_t *si, void* context) { 
+void handleChild(int sig) { 
     int pid, status;
     switch(sig) {
         case SIGCHLD:
@@ -133,9 +133,9 @@ int main(int argc, char * argv[]) {
     
     //Create the SIGCHLD handler
     struct sigaction childHandler;
-    childHandler.sa_flags = SA_SIGINFO;
-    childHandler.sa_sigaction = handleChild;
-    if (sigaction(SIGCHLD, &childHandler, NULL)!= 0) {
+    childHandler.sa_flags = SA_RESTART | SA_NOCLDSTOP;
+    childHandler.sa_handler = handleChild;
+    if (sigaction(SIGCHLD, &childHandler, NULL) != 0) {
         fprintf(stderr, "Error installing sigaction.\n");
         exit(EXIT_FAILURE);
     }   
@@ -143,7 +143,7 @@ int main(int argc, char * argv[]) {
     //Create the SIGINT handler
     struct sigaction endHandler;
     endHandler.sa_handler = handleSigint;
-    if (sigaction(SIGINT, &endHandler, NULL)) {
+    if (sigaction(SIGINT, &endHandler, NULL) !=0) {
         fprintf(stderr, "Error installing sigaction.\n");
         exit(EXIT_FAILURE);
     }
@@ -160,8 +160,11 @@ int main(int argc, char * argv[]) {
 
     //Split process to create server on background and input from stdin
     while ((pid = fork()) < 0);
-    if (pid > 0)
+    if (pid > 0) {
         execl(CLIENT_EXEC, CLIENT_EXEC, PIPE_PATH, NULL);
+        fprintf(stderr, "Error with execl.\n");
+        exit(EXIT_FAILURE);
+    }
 
 
     int closeFlag;
